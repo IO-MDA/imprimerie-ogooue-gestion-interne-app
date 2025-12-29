@@ -1,0 +1,293 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Settings,
+  Users,
+  Shield,
+  Trash2,
+  Edit,
+  UserPlus,
+  Building2,
+  Mail
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+export default function Parametres() {
+  const [users, setUsers] = useState([]);
+  const [services, setServices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    const [usersData, servicesData, userData] = await Promise.all([
+      base44.entities.User.list(),
+      base44.entities.Service.list(),
+      base44.auth.me()
+    ]);
+    setUsers(usersData);
+    setServices(servicesData);
+    setUser(userData);
+    setIsLoading(false);
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) {
+      toast.error('Veuillez entrer une adresse email');
+      return;
+    }
+    
+    await base44.users.inviteUser(inviteEmail, inviteRole);
+    toast.success(`Invitation envoyée à ${inviteEmail}`);
+    setShowInvite(false);
+    setInviteEmail('');
+    setInviteRole('user');
+    loadData();
+  };
+
+  const initializeServices = async () => {
+    const defaultServices = [
+      { nom: 'PHOTOCOPIE', description: 'Service de photocopie', icone: 'Copy', couleur: 'blue' },
+      { nom: 'IMPRESSION & SAISIE', description: 'Impression et saisie de documents', icone: 'Printer', couleur: 'indigo' },
+      { nom: 'PHOTO ID', description: 'Photos d\'identité', icone: 'Camera', couleur: 'violet' },
+      { nom: 'SCAN & PLASTIFICATION', description: 'Numérisation et plastification', icone: 'Scan', couleur: 'emerald' },
+      { nom: 'VENTE ARTICLES', description: 'Vente d\'articles de papeterie', icone: 'ShoppingBag', couleur: 'amber' },
+      { nom: 'IMPRIMERIE', description: 'Travaux d\'imprimerie', icone: 'Book', couleur: 'rose' }
+    ];
+
+    for (const service of defaultServices) {
+      const exists = services.find(s => s.nom === service.nom);
+      if (!exists) {
+        await base44.entities.Service.create(service);
+      }
+    }
+    
+    toast.success('Services initialisés');
+    loadData();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
+        <p className="text-slate-500">Configuration de l'application</p>
+      </div>
+
+      <Tabs defaultValue="users">
+        <TabsList className="bg-slate-100">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Utilisateurs
+          </TabsTrigger>
+          <TabsTrigger value="services" className="flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Services
+          </TabsTrigger>
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Général
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="mt-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Gestion des utilisateurs</h2>
+            <Button onClick={() => setShowInvite(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Inviter un utilisateur
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {users.map(u => (
+                <Card key={u.id} className="border-0 shadow-lg shadow-slate-200/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold ${
+                          u.role === 'admin' ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                        }`}>
+                          {u.full_name?.[0]?.toUpperCase() || u.email?.[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium">{u.full_name || u.email}</p>
+                          <p className="text-sm text-slate-500">{u.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge className={u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}>
+                          <Shield className="w-3 h-3 mr-1" />
+                          {u.role === 'admin' ? 'Administrateur' : 'Opérateur'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Services Tab */}
+        <TabsContent value="services" className="mt-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Services de l'imprimerie</h2>
+            <Button onClick={initializeServices} variant="outline">
+              Initialiser les services par défaut
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {services.map(service => (
+              <Card key={service.id} className="border-0 shadow-lg shadow-slate-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg bg-${service.couleur || 'blue'}-100 flex items-center justify-center`}>
+                      <Building2 className={`w-5 h-5 text-${service.couleur || 'blue'}-600`} />
+                    </div>
+                    <div>
+                      <p className="font-medium">{service.nom}</p>
+                      <p className="text-sm text-slate-500">{service.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {services.length === 0 && (
+            <Card className="border-0 shadow-lg shadow-slate-200/50">
+              <CardContent className="py-12 text-center">
+                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 mb-4">Aucun service configuré</p>
+                <Button onClick={initializeServices}>
+                  Initialiser les services
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* General Tab */}
+        <TabsContent value="general" className="mt-6 space-y-4">
+          <Card className="border-0 shadow-lg shadow-slate-200/50">
+            <CardHeader>
+              <CardTitle>Informations de l'entreprise</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nom de l'entreprise</Label>
+                  <Input value="Imprimerie Ogooué" disabled />
+                </div>
+                <div>
+                  <Label>Pays</Label>
+                  <Input value="Gabon" disabled />
+                </div>
+                <div>
+                  <Label>Ville</Label>
+                  <Input value="Libreville" disabled />
+                </div>
+                <div>
+                  <Label>Devise</Label>
+                  <Input value="FCFA" disabled />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg shadow-slate-200/50">
+            <CardHeader>
+              <CardTitle>Paramètres des rapports</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Verrouillage automatique des rapports</p>
+                  <p className="text-sm text-slate-500">Les rapports soumis sont automatiquement verrouillés</p>
+                </div>
+                <Switch checked={true} disabled />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Approbation requise pour modification</p>
+                  <p className="text-sm text-slate-500">Un administrateur doit approuver les demandes de modification</p>
+                </div>
+                <Switch checked={true} disabled />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Invite Dialog */}
+      <Dialog open={showInvite} onOpenChange={setShowInvite}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Inviter un utilisateur</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Adresse email</Label>
+              <Input 
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="email@exemple.com"
+              />
+            </div>
+            <div>
+              <Label>Rôle</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Opérateur</SelectItem>
+                  <SelectItem value="admin">Administrateur</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500 mt-1">
+                {inviteRole === 'admin' 
+                  ? 'Les administrateurs peuvent gérer les utilisateurs et approuver les modifications'
+                  : 'Les opérateurs peuvent créer et soumettre des rapports'}
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowInvite(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleInviteUser}>
+                <Mail className="w-4 h-4 mr-2" />
+                Envoyer l'invitation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
