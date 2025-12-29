@@ -67,6 +67,7 @@ export default function Layout({ children, currentPageName }) {
   const navigation = [
     { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard },
     { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList },
+    { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck },
     { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText },
     { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt },
     { name: 'Catalogue produits', href: 'Catalogue', icon: Package },

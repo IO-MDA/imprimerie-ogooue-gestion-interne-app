@@ -17,7 +17,8 @@ import {
   Lock,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import RapportForm from '@/components/rapports/RapportForm';
 import moment from 'moment';
@@ -39,6 +40,9 @@ export default function RapportsJournaliers() {
   const [editingRapport, setEditingRapport] = useState(null);
   const [selectedRapport, setSelectedRapport] = useState(null);
   const [user, setUser] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [rapportToDelete, setRapportToDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     service: 'all',
@@ -65,16 +69,87 @@ export default function RapportsJournaliers() {
   const isAdmin = user?.role === 'admin';
 
   const handleSave = async (data) => {
+    // Check if report is empty (no data in any service)
+    const hasData = data.services_data?.some(s => 
+      (s.details_recettes?.length > 0) || (s.details_depenses?.length > 0)
+    );
+
+    if (!hasData && data.statut === 'soumis') {
+      toast.error('Impossible de soumettre un rapport vide');
+      return;
+    }
+
     if (editingRapport) {
       await base44.entities.RapportJournalier.update(editingRapport.id, data);
       toast.success('Rapport mis à jour');
     } else {
-      await base44.entities.RapportJournalier.create(data);
-      toast.success('Rapport créé');
+      // Check if a report already exists for this date
+      const existingRapports = await base44.entities.RapportJournalier.filter({ date: data.date });
+      
+      if (existingRapports.length > 0) {
+        // Merge reports from same date
+        const existingRapport = existingRapports[0];
+        const mergedServicesData = [...existingRapport.services_data];
+        
+        // Merge new data with existing
+        data.services_data.forEach(newServiceData => {
+          const existingServiceIndex = mergedServicesData.findIndex(s => s.service === newServiceData.service);
+          if (existingServiceIndex >= 0) {
+            // Merge details
+            mergedServicesData[existingServiceIndex].details_recettes = [
+              ...(mergedServicesData[existingServiceIndex].details_recettes || []),
+              ...(newServiceData.details_recettes || [])
+            ];
+            mergedServicesData[existingServiceIndex].details_depenses = [
+              ...(mergedServicesData[existingServiceIndex].details_depenses || []),
+              ...(newServiceData.details_depenses || [])
+            ];
+            // Recalculate totals
+            mergedServicesData[existingServiceIndex].recettes = 
+              mergedServicesData[existingServiceIndex].details_recettes.reduce((sum, item) => 
+                sum + (item.montant * (item.quantite || 1)), 0);
+            mergedServicesData[existingServiceIndex].depenses = 
+              mergedServicesData[existingServiceIndex].details_depenses.reduce((sum, item) => 
+                sum + item.montant, 0);
+          }
+        });
+
+        const totalRecettes = mergedServicesData.reduce((sum, s) => sum + (s.recettes || 0), 0);
+        const totalDepenses = mergedServicesData.reduce((sum, s) => sum + (s.depenses || 0), 0);
+
+        await base44.entities.RapportJournalier.update(existingRapport.id, {
+          ...data,
+          services_data: mergedServicesData,
+          total_recettes: totalRecettes,
+          total_depenses: totalDepenses,
+          observations: (existingRapport.observations || '') + '\n' + (data.observations || '')
+        });
+        toast.success('Rapport fusionné avec le rapport existant du ' + data.date);
+      } else {
+        await base44.entities.RapportJournalier.create(data);
+        toast.success('Rapport créé');
+      }
     }
+    
     setShowForm(false);
     setEditingRapport(null);
     loadData();
+    
+    // Clean up empty reports
+    await cleanupEmptyReports();
+  };
+
+  const cleanupEmptyReports = async () => {
+    const allRapports = await base44.entities.RapportJournalier.list();
+    for (const rapport of allRapports) {
+      const hasData = rapport.services_data?.some(s => 
+        (s.details_recettes?.length > 0) || (s.details_depenses?.length > 0) ||
+        (s.recettes > 0) || (s.depenses > 0)
+      );
+      if (!hasData) {
+        await base44.entities.RapportJournalier.delete(rapport.id);
+      }
+    }
   };
 
   const handleEdit = (rapport) => {
@@ -99,7 +174,51 @@ export default function RapportsJournaliers() {
       demandeur_nom: user.full_name || user.email,
       motif: 'Demande de modification du rapport du ' + moment(rapport.date).format('DD/MM/YYYY')
     });
-    toast.success('Demande de modification envoyée');
+    
+    // Send email notification to all users
+    try {
+      const allUsers = await base44.entities.User.list();
+      for (const targetUser of allUsers) {
+        if (targetUser.email) {
+          await base44.integrations.Core.SendEmail({
+            from_name: 'Imprimerie Ogooué',
+            to: targetUser.email,
+            subject: 'Nouvelle demande de modification de rapport',
+            body: `Bonjour,\n\n${user.full_name || user.email} a demandé la modification du rapport du ${moment(rapport.date).format('DD/MM/YYYY')}.\n\nMotif: Demande de modification du rapport\n\nVeuillez consulter la plateforme pour traiter cette demande.\n\nCordialement,\nImprimerie Ogooué`
+          });
+        }
+      }
+    } catch (e) {
+      console.log('Email notification error:', e);
+    }
+    
+    toast.success('Demande de modification envoyée et notifications email envoyées');
+  };
+
+  const handleDeleteRapport = async () => {
+    if (!deleteReason.trim()) {
+      toast.error('Veuillez indiquer la raison de la suppression');
+      return;
+    }
+
+    // Save deletion record
+    await base44.entities.SuppressionRapport.create({
+      rapport_id: rapportToDelete.id,
+      rapport_date: rapportToDelete.date,
+      rapport_data: rapportToDelete,
+      supprime_par: user.email,
+      supprime_par_nom: user.full_name || user.email,
+      raison: deleteReason
+    });
+
+    // Delete the report
+    await base44.entities.RapportJournalier.delete(rapportToDelete.id);
+    
+    toast.success('Rapport supprimé');
+    setShowDeleteDialog(false);
+    setRapportToDelete(null);
+    setDeleteReason('');
+    loadData();
   };
 
   const filteredRapports = rapports.filter(r => {
@@ -271,6 +390,16 @@ export default function RapportsJournaliers() {
                           <CheckCircle className="w-4 h-4" />
                         </Button>
                       )}
+                      {isAdmin && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => { setRapportToDelete(rapport); setShowDeleteDialog(true); }}
+                          className="text-rose-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -420,6 +549,51 @@ export default function RapportsJournaliers() {
                   <p className="text-slate-600 bg-slate-50 p-3 rounded-lg">{selectedRapport.observations}</p>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-rose-600">Supprimer le rapport</DialogTitle>
+          </DialogHeader>
+          {rapportToDelete && (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 font-medium">⚠️ Attention</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Vous êtes sur le point de supprimer le rapport du {moment(rapportToDelete.date).format('DD/MM/YYYY')}.
+                  Cette action est irréversible.
+                </p>
+              </div>
+              
+              <div>
+                <Label>Raison de la suppression *</Label>
+                <Textarea 
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Expliquez pourquoi ce rapport doit être supprimé..."
+                  rows={4}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setDeleteReason(''); }}>
+                  Annuler
+                </Button>
+                <Button 
+                  className="bg-rose-600 hover:bg-rose-700"
+                  onClick={handleDeleteRapport}
+                  disabled={!deleteReason.trim()}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Confirmer la suppression
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

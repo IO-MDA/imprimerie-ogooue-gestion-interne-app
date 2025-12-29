@@ -60,18 +60,49 @@ export default function DemandesModification() {
     
     await base44.entities.DemandeModification.update(demande.id, {
       statut: 'approuvee',
-      reponse_admin: reponse || 'Demande approuvée',
+      reponse_admin: reponse || 'Demande approuvée - Le rapport est maintenant modifiable',
       traite_par: user?.email,
       date_traitement: new Date().toISOString()
     });
 
-    toast.success('Demande approuvée - Le rapport peut maintenant être modifié');
+    // Send email notification to requester and all users
+    try {
+      const allUsers = await base44.entities.User.list();
+      
+      for (const targetUser of allUsers) {
+        if (targetUser.email) {
+          const isRequester = targetUser.email === demande.demandeur;
+          await base44.integrations.Core.SendEmail({
+            from_name: 'Imprimerie Ogooué',
+            to: targetUser.email,
+            subject: isRequester ? 'Demande de modification approuvée' : 'Notification: Demande de modification approuvée',
+            body: `Bonjour ${targetUser.full_name || targetUser.email},
+
+${isRequester ? 'Bonne nouvelle! Votre' : 'La'} demande de modification du rapport du ${moment(rapport?.date).format('DD/MM/YYYY')} a été approuvée par ${user?.full_name || user?.email}.
+
+${isRequester ? 'Vous pouvez maintenant modifier ce rapport.' : ''}
+
+Réponse de l'administrateur:
+${reponse || 'Demande approuvée - Le rapport est maintenant modifiable'}
+
+Cordialement,
+Imprimerie Ogooué`
+          });
+        }
+      }
+    } catch (e) {
+      console.log('Email notification error:', e);
+    }
+
+    toast.success('Demande approuvée - Notifications envoyées');
     setSelectedDemande(null);
     setReponse('');
     loadData();
   };
 
   const handleReject = async (demande) => {
+    const rapport = getRapport(demande.rapport_id);
+    
     await base44.entities.DemandeModification.update(demande.id, {
       statut: 'refusee',
       reponse_admin: reponse || 'Demande refusée',
@@ -79,7 +110,36 @@ export default function DemandesModification() {
       date_traitement: new Date().toISOString()
     });
 
-    toast.success('Demande refusée');
+    // Send email notification to requester and all users
+    try {
+      const allUsers = await base44.entities.User.list();
+      
+      for (const targetUser of allUsers) {
+        if (targetUser.email) {
+          const isRequester = targetUser.email === demande.demandeur;
+          await base44.integrations.Core.SendEmail({
+            from_name: 'Imprimerie Ogooué',
+            to: targetUser.email,
+            subject: isRequester ? 'Demande de modification refusée' : 'Notification: Demande de modification refusée',
+            body: `Bonjour ${targetUser.full_name || targetUser.email},
+
+${isRequester ? 'Votre' : 'La'} demande de modification du rapport du ${moment(rapport?.date).format('DD/MM/YYYY')} a été refusée par ${user?.full_name || user?.email}.
+
+Raison du refus:
+${reponse || 'Demande refusée'}
+
+${isRequester ? 'Pour toute question, veuillez contacter l\'administrateur.' : ''}
+
+Cordialement,
+Imprimerie Ogooué`
+          });
+        }
+      }
+    } catch (e) {
+      console.log('Email notification error:', e);
+    }
+
+    toast.success('Demande refusée - Notifications envoyées');
     setSelectedDemande(null);
     setReponse('');
     loadData();
