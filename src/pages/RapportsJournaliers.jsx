@@ -103,14 +103,18 @@ export default function RapportsJournaliers() {
   };
 
   const filteredRapports = rapports.filter(r => {
-    if (filters.service !== 'all' && r.service !== filters.service) return false;
+    if (filters.service !== 'all') {
+      // Check if any service in services_data matches
+      const hasService = r.services_data?.some(s => s.service === filters.service && (s.recettes > 0 || s.depenses > 0));
+      if (!hasService) return false;
+    }
     if (filters.statut !== 'all' && r.statut !== filters.statut) return false;
     if (filters.dateFrom && r.date < filters.dateFrom) return false;
     if (filters.dateTo && r.date > filters.dateTo) return false;
     if (filters.search) {
       const search = filters.search.toLowerCase();
-      return r.service?.toLowerCase().includes(search) || 
-             r.operateur_nom?.toLowerCase().includes(search);
+      return r.operateur_nom?.toLowerCase().includes(search) ||
+             moment(r.date).format('DD/MM/YYYY').includes(search);
     }
     return true;
   });
@@ -219,29 +223,32 @@ export default function RapportsJournaliers() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-slate-900">{rapport.service}</h3>
+                        <h3 className="font-semibold text-slate-900">Rapport du {moment(rapport.date).format('DD MMMM YYYY')}</h3>
                         {getStatusBadge(rapport.statut)}
                         {rapport.verrouille && <Lock className="w-4 h-4 text-slate-400" />}
                       </div>
                       <p className="text-sm text-slate-500 mt-1">
                         <Calendar className="w-3 h-3 inline mr-1" />
-                        {moment(rapport.date).format('DD MMMM YYYY')} • {rapport.operateur_nom}
+                        Opérateur: {rapport.operateur_nom}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {rapport.services_data?.filter(s => s.recettes > 0 || s.depenses > 0).length || 0} service(s) avec données
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-sm text-slate-500">Recettes</p>
-                      <p className="font-bold text-emerald-600">{(rapport.recettes || 0).toLocaleString()} FCFA</p>
+                      <p className="font-bold text-emerald-600">{(rapport.total_recettes || 0).toLocaleString()} FCFA</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-slate-500">Dépenses</p>
-                      <p className="font-bold text-rose-500">{(rapport.depenses || 0).toLocaleString()} FCFA</p>
+                      <p className="font-bold text-rose-500">{(rapport.total_depenses || 0).toLocaleString()} FCFA</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-slate-500">Bénéfice</p>
-                      <p className={`font-bold ${(rapport.recettes - rapport.depenses) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
-                        {((rapport.recettes || 0) - (rapport.depenses || 0)).toLocaleString()} FCFA
+                      <p className={`font-bold ${(rapport.total_recettes - rapport.total_depenses) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                        {((rapport.total_recettes || 0) - (rapport.total_depenses || 0)).toLocaleString()} FCFA
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -303,60 +310,106 @@ export default function RapportsJournaliers() {
                   <p className="font-medium">{moment(selectedRapport.date).format('DD/MM/YYYY')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Service</p>
-                  <p className="font-medium">{selectedRapport.service}</p>
+                  <p className="text-sm text-slate-500">Statut</p>
+                  {getStatusBadge(selectedRapport.statut)}
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Opérateur</p>
                   <p className="font-medium">{selectedRapport.operateur_nom}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Statut</p>
-                  {getStatusBadge(selectedRapport.statut)}
+                  <p className="text-sm text-slate-500">Services actifs</p>
+                  <p className="font-medium">{selectedRapport.services_data?.filter(s => s.recettes > 0 || s.depenses > 0).length || 0}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl">
                 <div className="text-center">
-                  <p className="text-sm text-slate-500">Recettes</p>
-                  <p className="text-xl font-bold text-emerald-600">{(selectedRapport.recettes || 0).toLocaleString()} FCFA</p>
+                  <p className="text-sm text-slate-500">Total Recettes</p>
+                  <p className="text-xl font-bold text-emerald-600">{(selectedRapport.total_recettes || 0).toLocaleString()} FCFA</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-slate-500">Dépenses</p>
-                  <p className="text-xl font-bold text-rose-500">{(selectedRapport.depenses || 0).toLocaleString()} FCFA</p>
+                  <p className="text-sm text-slate-500">Total Dépenses</p>
+                  <p className="text-xl font-bold text-rose-500">{(selectedRapport.total_depenses || 0).toLocaleString()} FCFA</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-slate-500">Bénéfice</p>
                   <p className="text-xl font-bold text-blue-600">
-                    {((selectedRapport.recettes || 0) - (selectedRapport.depenses || 0)).toLocaleString()} FCFA
+                    {((selectedRapport.total_recettes || 0) - (selectedRapport.total_depenses || 0)).toLocaleString()} FCFA
                   </p>
                 </div>
               </div>
 
-              {selectedRapport.details_recettes?.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Détail des recettes</h4>
-                  <div className="space-y-2">
-                    {selectedRapport.details_recettes.map((item, i) => (
-                      <div key={i} className="flex justify-between p-2 bg-emerald-50 rounded">
-                        <span>{item.libelle}</span>
-                        <span className="font-medium">{item.quantite}x {item.montant} = {(item.quantite * item.montant).toLocaleString()} FCFA</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Tableau par service */}
+              <div>
+                <h4 className="font-medium mb-3">Détail par service</h4>
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="w-full">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="text-left p-3 text-sm font-medium text-slate-600">Service</th>
+                        <th className="text-right p-3 text-sm font-medium text-slate-600">Recettes</th>
+                        <th className="text-right p-3 text-sm font-medium text-slate-600">Dépenses</th>
+                        <th className="text-right p-3 text-sm font-medium text-slate-600">Bénéfice</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedRapport.services_data?.filter(s => s.recettes > 0 || s.depenses > 0).map((serviceData, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="p-3 font-medium">{serviceData.service}</td>
+                          <td className="p-3 text-right text-emerald-600">{(serviceData.recettes || 0).toLocaleString()} FCFA</td>
+                          <td className="p-3 text-right text-rose-600">{(serviceData.depenses || 0).toLocaleString()} FCFA</td>
+                          <td className={`p-3 text-right font-bold ${(serviceData.recettes - serviceData.depenses) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                            {((serviceData.recettes || 0) - (serviceData.depenses || 0)).toLocaleString()} FCFA
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </div>
 
-              {selectedRapport.details_depenses?.length > 0 && (
+              {/* Détails des recettes et dépenses */}
+              {selectedRapport.services_data?.some(s => s.details_recettes?.length > 0 || s.details_depenses?.length > 0) && (
                 <div>
-                  <h4 className="font-medium mb-2">Détail des dépenses</h4>
-                  <div className="space-y-2">
-                    {selectedRapport.details_depenses.map((item, i) => (
-                      <div key={i} className="flex justify-between p-2 bg-rose-50 rounded">
-                        <span>{item.libelle}</span>
-                        <span className="font-medium">{item.montant.toLocaleString()} FCFA</span>
-                      </div>
-                    ))}
+                  <h4 className="font-medium mb-3">Détails des transactions</h4>
+                  <div className="space-y-4">
+                    {selectedRapport.services_data.map((serviceData, sIndex) => {
+                      if ((serviceData.details_recettes?.length || 0) === 0 && (serviceData.details_depenses?.length || 0) === 0) return null;
+                      return (
+                        <div key={sIndex} className="border rounded-lg p-4">
+                          <h5 className="font-medium mb-2 text-blue-600">{serviceData.service}</h5>
+                          
+                          {serviceData.details_recettes?.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-emerald-700 mb-1">Recettes:</p>
+                              <div className="space-y-1">
+                                {serviceData.details_recettes.map((item, i) => (
+                                  <div key={i} className="flex justify-between text-sm p-2 bg-emerald-50 rounded">
+                                    <span>{item.libelle}</span>
+                                    <span className="font-medium">{item.quantite}x {item.montant} = {(item.quantite * item.montant).toLocaleString()} FCFA</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {serviceData.details_depenses?.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-rose-700 mb-1">Dépenses:</p>
+                              <div className="space-y-1">
+                                {serviceData.details_depenses.map((item, i) => (
+                                  <div key={i} className="flex justify-between text-sm p-2 bg-rose-50 rounded">
+                                    <span>{item.libelle}</span>
+                                    <span className="font-medium">{item.montant.toLocaleString()} FCFA</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

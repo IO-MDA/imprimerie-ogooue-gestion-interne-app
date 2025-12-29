@@ -59,20 +59,22 @@ export default function Dashboard() {
   const weekRapports = rapports.filter(r => r.date >= thisWeekStart);
   const monthRapports = rapports.filter(r => r.date >= thisMonthStart);
 
-  const todayRecettes = todayRapports.reduce((sum, r) => sum + (r.recettes || 0), 0);
-  const todayDepenses = todayRapports.reduce((sum, r) => sum + (r.depenses || 0), 0);
-  const weekRecettes = weekRapports.reduce((sum, r) => sum + (r.recettes || 0), 0);
-  const monthRecettes = monthRapports.reduce((sum, r) => sum + (r.recettes || 0), 0);
-  const monthDepenses = monthRapports.reduce((sum, r) => sum + (r.depenses || 0), 0);
+  const todayRecettes = todayRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+  const todayDepenses = todayRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
+  const weekRecettes = weekRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+  const monthRecettes = monthRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+  const monthDepenses = monthRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
 
   // Service performance
   const serviceStats = {};
   monthRapports.forEach(r => {
-    if (!serviceStats[r.service]) {
-      serviceStats[r.service] = { recettes: 0, depenses: 0 };
-    }
-    serviceStats[r.service].recettes += r.recettes || 0;
-    serviceStats[r.service].depenses += r.depenses || 0;
+    r.services_data?.forEach(serviceData => {
+      if (!serviceStats[serviceData.service]) {
+        serviceStats[serviceData.service] = { recettes: 0, depenses: 0 };
+      }
+      serviceStats[serviceData.service].recettes += serviceData.recettes || 0;
+      serviceStats[serviceData.service].depenses += serviceData.depenses || 0;
+    });
   });
 
   const serviceChartData = Object.entries(serviceStats).map(([service, stats]) => ({
@@ -86,8 +88,8 @@ export default function Dashboard() {
   for (let i = 6; i >= 0; i--) {
     const date = moment().subtract(i, 'days');
     const dayRapports = rapports.filter(r => r.date === date.format('YYYY-MM-DD'));
-    const recettes = dayRapports.reduce((sum, r) => sum + (r.recettes || 0), 0);
-    const depenses = dayRapports.reduce((sum, r) => sum + (r.depenses || 0), 0);
+    const recettes = dayRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+    const depenses = dayRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
     weeklyData.push({
       label: date.format('ddd'),
       recettes,
@@ -219,15 +221,15 @@ export default function Dashboard() {
                       <FileText className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900">{rapport.service}</p>
+                      <p className="font-medium text-slate-900">Rapport du {moment(rapport.date).format('DD/MM/YYYY')}</p>
                       <p className="text-sm text-slate-500">
-                        {moment(rapport.date).format('DD/MM/YYYY')} • {rapport.operateur_nom}
+                        {rapport.operateur_nom} • {rapport.services_data?.filter(s => s.recettes > 0 || s.depenses > 0).length || 0} services
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-emerald-600">+{(rapport.recettes || 0).toLocaleString()}</p>
-                    <p className="text-sm text-rose-500">-{(rapport.depenses || 0).toLocaleString()}</p>
+                    <p className="font-semibold text-emerald-600">+{(rapport.total_recettes || 0).toLocaleString()}</p>
+                    <p className="text-sm text-rose-500">-{(rapport.total_depenses || 0).toLocaleString()}</p>
                   </div>
                 </div>
               ))}

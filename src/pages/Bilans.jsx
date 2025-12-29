@@ -56,20 +56,24 @@ export default function Bilans() {
   };
 
   const filteredRapports = getFilteredRapports();
-  const totalRecettes = filteredRapports.reduce((sum, r) => sum + (r.recettes || 0), 0);
-  const totalDepenses = filteredRapports.reduce((sum, r) => sum + (r.depenses || 0), 0);
+  const totalRecettes = filteredRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+  const totalDepenses = filteredRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
   const benefice = totalRecettes - totalDepenses;
   const margeNette = totalRecettes > 0 ? ((benefice / totalRecettes) * 100).toFixed(1) : 0;
 
   // Service breakdown
   const serviceData = {};
   filteredRapports.forEach(r => {
-    if (!serviceData[r.service]) {
-      serviceData[r.service] = { recettes: 0, depenses: 0, count: 0 };
-    }
-    serviceData[r.service].recettes += r.recettes || 0;
-    serviceData[r.service].depenses += r.depenses || 0;
-    serviceData[r.service].count++;
+    r.services_data?.forEach(serviceInfo => {
+      if (!serviceData[serviceInfo.service]) {
+        serviceData[serviceInfo.service] = { recettes: 0, depenses: 0, count: 0 };
+      }
+      serviceData[serviceInfo.service].recettes += serviceInfo.recettes || 0;
+      serviceData[serviceInfo.service].depenses += serviceInfo.depenses || 0;
+      if (serviceInfo.recettes > 0 || serviceInfo.depenses > 0) {
+        serviceData[serviceInfo.service].count++;
+      }
+    });
   });
 
   const serviceChartData = Object.entries(serviceData)
@@ -99,8 +103,8 @@ export default function Bilans() {
         const monthRapports = rapports.filter(r => moment(r.date).format('YYYY-MM') === month.format('YYYY-MM'));
         data.push({
           label: month.format('MMM'),
-          recettes: monthRapports.reduce((s, r) => s + (r.recettes || 0), 0),
-          depenses: monthRapports.reduce((s, r) => s + (r.depenses || 0), 0)
+          recettes: monthRapports.reduce((s, r) => s + (r.total_recettes || 0), 0),
+          depenses: monthRapports.reduce((s, r) => s + (r.total_depenses || 0), 0)
         });
       }
     } else {
@@ -110,8 +114,8 @@ export default function Bilans() {
         const dayRapports = filteredRapports.filter(r => r.date === date.format('YYYY-MM-DD'));
         data.push({
           label: date.format(periode === 'semaine' ? 'ddd' : 'DD'),
-          recettes: dayRapports.reduce((s, r) => s + (r.recettes || 0), 0),
-          depenses: dayRapports.reduce((s, r) => s + (r.depenses || 0), 0)
+          recettes: dayRapports.reduce((s, r) => s + (r.total_recettes || 0), 0),
+          depenses: dayRapports.reduce((s, r) => s + (r.total_depenses || 0), 0)
         });
       }
     }
