@@ -68,6 +68,8 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard },
     { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList },
     { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck },
+    { name: 'Tâches', href: 'Taches', icon: FileCheck },
+    { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard },
     { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText },
     { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt },
     { name: 'Catalogue produits', href: 'Catalogue', icon: Package },
