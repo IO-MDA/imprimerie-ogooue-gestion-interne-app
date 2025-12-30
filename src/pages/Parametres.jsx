@@ -14,7 +14,12 @@ import {
   Edit,
   UserPlus,
   Building2,
-  Mail
+  Mail,
+  Share2,
+  Facebook,
+  Instagram,
+  MessageCircle,
+  Twitter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +34,13 @@ export default function Parametres() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [user, setUser] = useState(null);
+  const [reseaux, setReseaux] = useState([]);
+  const [showSocialForm, setShowSocialForm] = useState(false);
+  const [socialForm, setSocialForm] = useState({
+    plateforme: 'facebook',
+    nom_compte: '',
+    url: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -36,13 +48,15 @@ export default function Parametres() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [usersData, servicesData, userData] = await Promise.all([
+    const [usersData, servicesData, reseauxData, userData] = await Promise.all([
       base44.entities.User.list(),
       base44.entities.Service.list(),
+      base44.entities.ReseauSocial.list(),
       base44.auth.me()
     ]);
     setUsers(usersData);
     setServices(servicesData);
+    setReseaux(reseauxData);
     setUser(userData);
     setIsLoading(false);
   };
@@ -82,6 +96,52 @@ export default function Parametres() {
     loadData();
   };
 
+  const handleAddSocial = async () => {
+    if (!socialForm.nom_compte || !socialForm.url) {
+      toast.error('Veuillez remplir tous les champs');
+      return;
+    }
+
+    await base44.entities.ReseauSocial.create({
+      ...socialForm,
+      connecte: true,
+      derniere_synchro: new Date().toISOString()
+    });
+
+    toast.success('Réseau social ajouté');
+    setShowSocialForm(false);
+    setSocialForm({ plateforme: 'facebook', nom_compte: '', url: '' });
+    loadData();
+  };
+
+  const handleRemoveSocial = async (reseau) => {
+    if (confirm(`Êtes-vous sûr de vouloir déconnecter ${reseau.plateforme} ?`)) {
+      await base44.entities.ReseauSocial.delete(reseau.id);
+      toast.success('Réseau social déconnecté');
+      loadData();
+    }
+  };
+
+  const getSocialIcon = (plateforme) => {
+    const icons = {
+      facebook: <Facebook className="w-5 h-5" />,
+      instagram: <Instagram className="w-5 h-5" />,
+      whatsapp: <MessageCircle className="w-5 h-5" />,
+      twitter: <Twitter className="w-5 h-5" />
+    };
+    return icons[plateforme] || <Share2 className="w-5 h-5" />;
+  };
+
+  const getSocialColor = (plateforme) => {
+    const colors = {
+      facebook: 'from-blue-500 to-blue-600',
+      instagram: 'from-pink-500 to-purple-600',
+      whatsapp: 'from-green-500 to-green-600',
+      twitter: 'from-sky-500 to-blue-500'
+    };
+    return colors[plateforme] || 'from-slate-500 to-slate-600';
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -99,6 +159,10 @@ export default function Parametres() {
           <TabsTrigger value="services" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
             Services
+          </TabsTrigger>
+          <TabsTrigger value="social" className="flex items-center gap-2">
+            <Share2 className="w-4 h-4" />
+            Réseaux sociaux
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -189,6 +253,84 @@ export default function Parametres() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Social Networks Tab */}
+        <TabsContent value="social" className="mt-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold">Réseaux sociaux de l'imprimerie</h2>
+              <p className="text-sm text-slate-500">Connectez vos réseaux sociaux pour recevoir les messages directement sur l'application</p>
+            </div>
+            <Button onClick={() => setShowSocialForm(true)}>
+              <Share2 className="w-4 h-4 mr-2" />
+              Ajouter un réseau
+            </Button>
+          </div>
+
+          {reseaux.length === 0 ? (
+            <Card className="border-0 shadow-lg shadow-slate-200/50">
+              <CardContent className="py-12 text-center">
+                <Share2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 mb-4">Aucun réseau social connecté</p>
+                <p className="text-sm text-slate-400 mb-4">
+                  Connectez vos réseaux sociaux pour centraliser tous vos messages clients
+                </p>
+                <Button onClick={() => setShowSocialForm(true)}>
+                  Connecter un réseau
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reseaux.map(reseau => (
+                <Card key={reseau.id} className="border-0 shadow-lg shadow-slate-200/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getSocialColor(reseau.plateforme)} flex items-center justify-center text-white`}>
+                          {getSocialIcon(reseau.plateforme)}
+                        </div>
+                        <div>
+                          <p className="font-medium capitalize">{reseau.plateforme}</p>
+                          <p className="text-sm text-slate-500">{reseau.nom_compte}</p>
+                          <a href={reseau.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                            Voir le profil
+                          </a>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-emerald-100 text-emerald-700">Connecté</Badge>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveSocial(reseau)} className="text-rose-600">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {reseau.derniere_synchro && (
+                      <p className="text-xs text-slate-400 mt-2">
+                        Dernière synchro: {moment(reseau.derniere_synchro).format('DD/MM/YYYY HH:mm')}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <Card className="border-0 shadow-lg shadow-blue-200/50 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <MessageCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-900">Centre de messages unifié</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Une fois connectés, tous les messages de vos réseaux sociaux apparaîtront dans la section Messagerie.
+                    Vous pourrez répondre directement depuis l'application.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* General Tab */}
@@ -283,6 +425,62 @@ export default function Parametres() {
               <Button onClick={handleInviteUser}>
                 <Mail className="w-4 h-4 mr-2" />
                 Envoyer l'invitation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Social Form Dialog */}
+      <Dialog open={showSocialForm} onOpenChange={setShowSocialForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajouter un réseau social</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Plateforme</Label>
+              <Select value={socialForm.plateforme} onValueChange={(v) => setSocialForm(prev => ({ ...prev, plateforme: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp Business</SelectItem>
+                  <SelectItem value="twitter">Twitter/X</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Nom du compte / Page</Label>
+              <Input
+                value={socialForm.nom_compte}
+                onChange={(e) => setSocialForm(prev => ({ ...prev, nom_compte: e.target.value }))}
+                placeholder="Ex: Imprimerie Ogooué"
+              />
+            </div>
+            <div>
+              <Label>URL du profil / page</Label>
+              <Input
+                value={socialForm.url}
+                onChange={(e) => setSocialForm(prev => ({ ...prev, url: e.target.value }))}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> Pour une intégration complète, vous devrez fournir les clés API de chaque plateforme.
+                Contactez le support pour l'assistance technique.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowSocialForm(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleAddSocial}>
+                <Share2 className="w-4 h-4 mr-2" />
+                Connecter
               </Button>
             </div>
           </div>

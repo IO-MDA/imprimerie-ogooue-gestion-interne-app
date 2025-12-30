@@ -12,8 +12,11 @@ import {
   Award,
   Target,
   BarChart3,
-  Calendar
+  Calendar,
+  FileText
 } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import moment from 'moment';
 import 'moment/locale/fr';
@@ -25,9 +28,16 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 export default function Bilans() {
   const [rapports, setRapports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [periode, setPeriode] = useState('semaine');
   const [selectedMonth, setSelectedMonth] = useState(moment().format('YYYY-MM'));
   const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+  const [compareYear, setCompareYear] = useState(moment().subtract(1, 'year').format('YYYY'));
+  const [showComparison, setShowComparison] = useState(false);
+  const [exportPeriod, setExportPeriod] = useState({
+    debut: moment().startOf('month').format('YYYY-MM-DD'),
+    fin: moment().endOf('month').format('YYYY-MM-DD')
+  });
 
   useEffect(() => {
     loadData();
@@ -35,8 +45,12 @@ export default function Bilans() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const data = await base44.entities.RapportJournalier.list('-date', 500);
+    const [data, userData] = await Promise.all([
+      base44.entities.RapportJournalier.list('-date', 500),
+      base44.auth.me()
+    ]);
     setRapports(data);
+    setUser(userData);
     setIsLoading(false);
   };
 
@@ -193,10 +207,109 @@ export default function Bilans() {
     years.push({ value: y, label: y });
   }
 
+  const exportToPDF = async () => {
+    const jsPDF = (await import('jspdf')).default;
+    const html2canvas = (await import('html2canvas')).default;
+
+    const exportRapports = rapports.filter(r => 
+      r.date >= exportPeriod.debut && r.date <= exportPeriod.fin
+    );
+
+    const totalRecettes = exportRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+    const totalDepenses = exportRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
+    const benefice = totalRecettes - totalDepenses;
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // Header
+    pdf.setFillColor(59, 130, 246);
+    pdf.rect(0, 0, pageWidth, 40, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(24);
+    pdf.text('Imprimerie Ogooué', 20, 20);
+    pdf.setFontSize(14);
+    pdf.text('Bilan Financier', 20, 32);
+
+    // Period
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(12);
+    pdf.text(`Période: ${moment(exportPeriod.debut).format('DD/MM/YYYY')} - ${moment(exportPeriod.fin).format('DD/MM/YYYY')}`, 20, 50);
+    pdf.text(`Date d'édition: ${moment().format('DD/MM/YYYY')}`, 20, 57);
+
+    // Summary
+    pdf.setFontSize(16);
+    pdf.text('Résumé Financier', 20, 70);
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(16, 185, 129);
+    pdf.text(`Total Recettes: ${totalRecettes.toLocaleString()} FCFA`, 20, 82);
+    pdf.setTextColor(239, 68, 68);
+    pdf.text(`Total Dépenses: ${totalDepenses.toLocaleString()} FCFA`, 20, 92);
+    pdf.setTextColor(benefice >= 0 ? 16 : 239, benefice >= 0 ? 185 : 68, benefice >= 0 ? 129 : 68);
+    pdf.text(`Bénéfice Net: ${benefice.toLocaleString()} FCFA`, 20, 102);
+
+    // Service breakdown
+    const serviceData = {};
+    exportRapports.forEach(r => {
+      r.services_data?.forEach(serviceInfo => {
+        if (!serviceData[serviceInfo.service]) {
+          serviceData[serviceInfo.service] = { recettes: 0, depenses: 0 };
+        }
+        serviceData[serviceInfo.service].recettes += serviceInfo.recettes || 0;
+        serviceData[serviceInfo.service].depenses += serviceInfo.depenses || 0;
+      });
+    });
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(14);
+    pdf.text('Détail par Service', 20, 115);
+    
+    let yPos = 125;
+    pdf.setFontSize(10);
+    Object.entries(serviceData).forEach(([service, data]) => {
+      if (yPos > pageHeight - 30) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(`${service}:`, 20, yPos);
+      pdf.text(`${data.recettes.toLocaleString()} FCFA`, 120, yPos);
+      yPos += 7;
+    });
+
+    // Footer
+    const pages = pdf.internal.pages.length - 1;
+    for (let i = 1; i <= pages; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Page ${i} sur ${pages}`, pageWidth - 30, pageHeight - 10);
+    }
+
+    pdf.save(`Bilan_${moment(exportPeriod.debut).format('YYYY-MM-DD')}_${moment(exportPeriod.fin).format('YYYY-MM-DD')}.pdf`);
+  };
+
+  const isAdmin = user?.role === 'admin';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-rose-600" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Accès Restreint</h2>
+          <p className="text-slate-600">Seuls les administrateurs peuvent accéder aux bilans et analyses.</p>
+        </div>
       </div>
     );
   }
@@ -209,7 +322,7 @@ export default function Bilans() {
           <h1 className="text-2xl font-bold text-slate-900">Bilans & Analyses</h1>
           <p className="text-slate-500">Analysez les performances et identifiez les améliorations</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Tabs value={periode} onValueChange={setPeriode}>
             <TabsList>
               <TabsTrigger value="semaine">Semaine</TabsTrigger>
@@ -241,8 +354,125 @@ export default function Bilans() {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            onClick={() => setShowComparison(!showComparison)}
+          >
+            Comparer années
+          </Button>
         </div>
       </div>
+
+      {/* Export Section */}
+      <Card className="border-0 shadow-lg shadow-slate-200/50 bg-gradient-to-r from-indigo-50 to-blue-50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1 min-w-64">
+              <Label className="text-sm font-medium mb-2 block">Période d'export PDF</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={exportPeriod.debut}
+                  onChange={(e) => setExportPeriod(prev => ({ ...prev, debut: e.target.value }))}
+                  className="bg-white"
+                />
+                <Input
+                  type="date"
+                  value={exportPeriod.fin}
+                  onChange={(e) => setExportPeriod(prev => ({ ...prev, fin: e.target.value }))}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={exportToPDF}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 mt-6"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Exporter en PDF
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Year Comparison */}
+      {showComparison && periode === 'annee' && (
+        <Card className="border-0 shadow-lg shadow-slate-200/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Comparaison annuelle</CardTitle>
+              <Select value={compareYear} onValueChange={setCompareYear}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Comparer avec" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.filter(y => y.value !== selectedYear).map(y => (
+                    <SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const year1Rapports = rapports.filter(r => moment(r.date).format('YYYY') === selectedYear);
+              const year2Rapports = rapports.filter(r => moment(r.date).format('YYYY') === compareYear);
+              
+              const year1Total = year1Rapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+              const year2Total = year2Rapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+              const year1Depenses = year1Rapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
+              const year2Depenses = year2Rapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
+              
+              const diffRecettes = year1Total - year2Total;
+              const diffPct = year2Total > 0 ? ((diffRecettes / year2Total) * 100).toFixed(1) : 0;
+
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-blue-50 border-blue-200">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-blue-600 font-medium">{selectedYear} - Recettes</p>
+                        <p className="text-2xl font-bold text-blue-900">{year1Total.toLocaleString()} FCFA</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-slate-50 border-slate-200">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-slate-600 font-medium">{compareYear} - Recettes</p>
+                        <p className="text-2xl font-bold text-slate-900">{year2Total.toLocaleString()} FCFA</p>
+                      </CardContent>
+                    </Card>
+                    <Card className={`${diffRecettes >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                      <CardContent className="p-4">
+                        <p className="text-sm font-medium">Différence</p>
+                        <p className={`text-2xl font-bold ${diffRecettes >= 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
+                          {diffRecettes >= 0 ? '+' : ''}{diffPct}%
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[
+                        { name: selectedYear, recettes: year1Total, depenses: year1Depenses },
+                        { name: compareYear, recettes: year2Total, depenses: year2Depenses }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => [`${value.toLocaleString()} FCFA`, '']} />
+                        <Legend />
+                        <Bar dataKey="recettes" name="Recettes" fill="#3b82f6" />
+                        <Bar dataKey="depenses" name="Dépenses" fill="#ef4444" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

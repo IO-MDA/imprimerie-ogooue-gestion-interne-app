@@ -1,4 +1,5 @@
 import Bilans from './pages/Bilans';
+import CalendrierTaches from './pages/CalendrierTaches';
 import Catalogue from './pages/Catalogue';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
@@ -9,12 +10,13 @@ import Messagerie from './pages/Messagerie';
 import Parametres from './pages/Parametres';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import CalendrierTaches from './pages/CalendrierTaches';
+import Annonces from './pages/Annonces';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Bilans": Bilans,
+    "CalendrierTaches": CalendrierTaches,
     "Catalogue": Catalogue,
     "Clients": Clients,
     "Dashboard": Dashboard,
@@ -25,7 +27,7 @@ export const PAGES = {
     "Parametres": Parametres,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "CalendrierTaches": CalendrierTaches,
+    "Annonces": Annonces,
 }
 
 export const pagesConfig = {
