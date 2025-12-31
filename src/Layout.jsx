@@ -72,6 +72,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Tâches', href: 'Taches', icon: FileCheck },
     { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard },
     { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText },
+    { name: 'Finances', href: 'Finances', icon: Receipt },
     { name: 'Prospection', href: 'Prospection', icon: Users },
     { name: 'Événements', href: 'Evenements', icon: Bell },
     { name: 'Annonces', href: 'Annonces', icon: Bell },
