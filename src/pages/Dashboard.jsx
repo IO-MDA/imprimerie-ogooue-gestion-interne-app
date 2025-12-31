@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [produits, setProuits] = useState([]);
   const [devis, setDevis] = useState([]);
   const [factures, setFactures] = useState([]);
+  const [objectifs, setObjectifs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -35,17 +36,19 @@ export default function Dashboard() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [rapportsData, produitsData, devisData, facturesData, userData] = await Promise.all([
-      base44.entities.RapportJournalier.list('-date', 100),
+    const [rapportsData, produitsData, devisData, facturesData, objectifsData, userData] = await Promise.all([
+      base44.entities.RapportJournalier.list('-date', 300),
       base44.entities.Produit.list(),
       base44.entities.Devis.list('-created_date', 50),
       base44.entities.Facture.list('-created_date', 50),
+      base44.entities.Objectif.list(),
       base44.auth.me()
     ]);
     setRapports(rapportsData);
     setProuits(produitsData);
     setDevis(devisData);
     setFactures(facturesData);
+    setObjectifs(objectifsData);
     setUser(userData);
     setIsLoading(false);
   };
@@ -106,6 +109,33 @@ export default function Dashboard() {
   // Recent reports
   const recentRapports = rapports.slice(0, 5);
 
+  // Objectifs du mois et année
+  const currentMonth = moment().format('YYYY-MM');
+  const currentYear = moment().format('YYYY');
+  const objectifMois = objectifs.find(o => o.type === 'mensuel' && o.periode === currentMonth);
+  const objectifAnnee = objectifs.find(o => o.type === 'annuel' && o.periode === currentYear);
+
+  // Calcul prévisionnel basé sur historique (3 derniers mois)
+  const last3Months = [];
+  for (let i = 1; i <= 3; i++) {
+    const monthKey = moment().subtract(i, 'months').format('YYYY-MM');
+    const monthData = rapports.filter(r => moment(r.date).format('YYYY-MM') === monthKey);
+    const recettes = monthData.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+    const benefice = monthData.reduce((sum, r) => sum + (r.total_recettes - r.total_depenses || 0), 0);
+    last3Months.push({ recettes, benefice });
+  }
+
+  const avgRecettes3Mois = last3Months.length > 0 ? last3Months.reduce((s, m) => s + m.recettes, 0) / last3Months.length : 0;
+  const avgBenefice3Mois = last3Months.length > 0 ? last3Months.reduce((s, m) => s + m.benefice, 0) / last3Months.length : 0;
+  const tendanceRecettes = last3Months.length >= 2 ? ((last3Months[0].recettes - last3Months[last3Months.length - 1].recettes) / last3Months[last3Months.length - 1].recettes * 100) : 0;
+  
+  const previsionMoisProchain = avgRecettes3Mois * (1 + tendanceRecettes / 100);
+  const previsionAnnee = avgRecettes3Mois * 12 * (1 + tendanceRecettes / 200);
+
+  // Progression objectif mensuel
+  const progressionMois = objectifMois ? (monthRecettes / objectifMois.objectif_recettes * 100) : 0;
+  const progressionAnnee = objectifAnnee ? (rapports.filter(r => moment(r.date).format('YYYY') === currentYear).reduce((s, r) => s + (r.total_recettes || 0), 0) / objectifAnnee.objectif_recettes * 100) : 0;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -155,6 +185,120 @@ export default function Dashboard() {
           color="amber"
         />
       </div>
+
+      {/* Objectifs & Prévisions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Objectif mensuel */}
+        <Card className="border-0 shadow-lg shadow-blue-200/50 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <CardHeader>
+            <CardTitle className="text-lg">Objectif du mois</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {objectifMois ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Objectif</p>
+                    <p className="text-2xl font-bold text-blue-900">{objectifMois.objectif_recettes.toLocaleString()} F</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-600">Réalisé</p>
+                    <p className="text-2xl font-bold text-emerald-600">{monthRecettes.toLocaleString()} F</p>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Progression</span>
+                    <span className="font-bold">{progressionMois.toFixed(1)}%</span>
+                  </div>
+                  <div className="relative w-full h-4 bg-slate-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${progressionMois >= 100 ? 'bg-emerald-500' : progressionMois >= 75 ? 'bg-blue-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.min(progressionMois, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                {progressionMois >= 100 && (
+                  <p className="text-sm text-emerald-600 font-medium">🎉 Objectif atteint !</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500">Aucun objectif défini pour ce mois</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Objectif annuel */}
+        <Card className="border-0 shadow-lg shadow-purple-200/50 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardHeader>
+            <CardTitle className="text-lg">Objectif annuel {currentYear}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {objectifAnnee ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Objectif</p>
+                    <p className="text-2xl font-bold text-purple-900">{objectifAnnee.objectif_recettes.toLocaleString()} F</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-600">Réalisé</p>
+                    <p className="text-2xl font-bold text-emerald-600">
+                      {rapports.filter(r => moment(r.date).format('YYYY') === currentYear).reduce((s, r) => s + (r.total_recettes || 0), 0).toLocaleString()} F
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Progression</span>
+                    <span className="font-bold">{progressionAnnee.toFixed(1)}%</span>
+                  </div>
+                  <div className="relative w-full h-4 bg-slate-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${progressionAnnee >= 100 ? 'bg-emerald-500' : progressionAnnee >= 75 ? 'bg-purple-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.min(progressionAnnee, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-slate-500">Aucun objectif défini pour cette année</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Prévisions */}
+      <Card className="border-0 shadow-lg shadow-emerald-200/50 bg-gradient-to-r from-emerald-50 to-teal-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
+            Prévisions (basées sur les 3 derniers mois)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-slate-600 mb-1">Moyenne mensuelle</p>
+              <p className="text-2xl font-bold text-emerald-900">{avgRecettes3Mois.toLocaleString()} F</p>
+              <p className="text-xs text-slate-500 mt-1">Bénéfice moyen: {avgBenefice3Mois.toLocaleString()} F</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600 mb-1">Prévision mois prochain</p>
+              <p className="text-2xl font-bold text-blue-900">{previsionMoisProchain.toLocaleString()} F</p>
+              <p className={`text-xs mt-1 flex items-center gap-1 ${tendanceRecettes >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {tendanceRecettes >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {tendanceRecettes >= 0 ? '+' : ''}{tendanceRecettes.toFixed(1)}% de tendance
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600 mb-1">Prévision annuelle</p>
+              <p className="text-2xl font-bold text-purple-900">{previsionAnnee.toLocaleString()} F</p>
+              <p className="text-xs text-slate-500 mt-1">Objectif atteignable</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
