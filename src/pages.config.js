@@ -1,3 +1,4 @@
+import Annonces from './pages/Annonces';
 import Bilans from './pages/Bilans';
 import CalendrierTaches from './pages/CalendrierTaches';
 import Catalogue from './pages/Catalogue';
@@ -10,11 +11,13 @@ import Messagerie from './pages/Messagerie';
 import Parametres from './pages/Parametres';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Annonces from './pages/Annonces';
+import Prospection from './pages/Prospection';
+import Evenements from './pages/Evenements';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Annonces": Annonces,
     "Bilans": Bilans,
     "CalendrierTaches": CalendrierTaches,
     "Catalogue": Catalogue,
@@ -27,7 +30,8 @@ export const PAGES = {
     "Parametres": Parametres,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Annonces": Annonces,
+    "Prospection": Prospection,
+    "Evenements": Evenements,
 }
 
 export const pagesConfig = {
