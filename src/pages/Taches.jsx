@@ -29,6 +29,7 @@ import moment from 'moment';
 export default function Taches() {
   const [taches, setTaches] = useState([]);
   const [users, setUsers] = useState([]);
+  const [projets, setProjets] = useState([]);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -51,7 +52,9 @@ export default function Taches() {
     priorite: 'normale',
     categorie: 'autre',
     statut: 'en_attente',
-    progression: 0
+    progression: 0,
+    projet_id: '',
+    projet_nom: ''
   });
 
   useEffect(() => {
@@ -60,13 +63,15 @@ export default function Taches() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [tachesData, usersData, userData] = await Promise.all([
+    const [tachesData, usersData, projetsData, userData] = await Promise.all([
       base44.entities.Tache.list('-date_echeance'),
       base44.entities.User.list(),
+      base44.entities.Projet.list(),
       base44.auth.me()
     ]);
     setTaches(tachesData);
     setUsers(usersData);
+    setProjets(projetsData);
     setUser(userData);
     setIsLoading(false);
   };
@@ -115,9 +120,11 @@ export default function Taches() {
     e.preventDefault();
     
     const selectedUser = users.find(u => u.email === formData.assigne_a);
+    const selectedProjet = projets.find(p => p.id === formData.projet_id);
     const data = {
       ...formData,
       assigne_a_nom: selectedUser?.full_name || formData.assigne_a,
+      projet_nom: selectedProjet?.nom || '',
       createur: user.email,
       createur_nom: user.full_name || user.email
     };
@@ -410,7 +417,7 @@ Imprimerie Ogooué`
                             <p className="text-sm text-slate-600 mb-3">{tache.description}</p>
                           )}
                           
-                          <div className="flex items-center gap-4 text-sm text-slate-500">
+                          <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
                             <span className="flex items-center gap-1">
                               <User className="w-3 h-3" />
                               {tache.assigne_a_nom}
@@ -419,6 +426,11 @@ Imprimerie Ogooué`
                               <Calendar className="w-3 h-3" />
                               {moment(tache.date_echeance).format('DD/MM/YYYY')}
                             </span>
+                            {tache.projet_nom && (
+                              <Badge variant="outline" className="text-xs">
+                                📁 {tache.projet_nom}
+                              </Badge>
+                            )}
                           </div>
 
                           <div className="mt-3">
@@ -577,6 +589,21 @@ Imprimerie Ogooué`
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label>Projet associé (optionnel)</Label>
+              <Select value={formData.projet_id} onValueChange={(v) => setFormData(prev => ({ ...prev, projet_id: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucun projet" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Aucun projet</SelectItem>
+                  {projets.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

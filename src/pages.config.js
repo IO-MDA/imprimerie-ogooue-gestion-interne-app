@@ -13,6 +13,7 @@ import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
 import Prospection from './pages/Prospection';
 import Evenements from './pages/Evenements';
+import Projets from './pages/Projets';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "Taches": Taches,
     "Prospection": Prospection,
     "Evenements": Evenements,
+    "Projets": Projets,
 }
 
 export const pagesConfig = {

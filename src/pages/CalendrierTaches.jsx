@@ -12,6 +12,7 @@ moment.locale('fr');
 
 export default function CalendrierTaches() {
   const [taches, setTaches] = useState([]);
+  const [projets, setProjets] = useState([]);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(moment());
@@ -24,11 +25,13 @@ export default function CalendrierTaches() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [tachesData, userData] = await Promise.all([
+    const [tachesData, projetsData, userData] = await Promise.all([
       base44.entities.Tache.list(),
+      base44.entities.Projet.list(),
       base44.auth.me()
     ]);
     setTaches(tachesData);
+    setProjets(projetsData);
     setUser(userData);
     setIsLoading(false);
   };
@@ -205,7 +208,9 @@ export default function CalendrierTaches() {
                       >
                         <div className={`text-xs p-1.5 rounded truncate flex items-center gap-1 ${getUrgenceColor(tache.date_echeance, tache.statut)} bg-opacity-20 hover:bg-opacity-30 transition-colors`}>
                           <div className={`w-2 h-2 rounded-full ${getUrgenceColor(tache.date_echeance, tache.statut)} flex-shrink-0`} />
-                          <span className="truncate text-slate-900 font-medium">{tache.titre}</span>
+                          <span className="truncate text-slate-900 font-medium">
+                            {tache.projet_nom ? `📁 ` : ''}{tache.titre}
+                          </span>
                         </div>
                       </button>
                     ))}
