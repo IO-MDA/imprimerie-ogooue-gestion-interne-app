@@ -174,10 +174,11 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       }
 
       // Footer on last page
-      pdf.setFontSize(10);
+      pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
-      pdf.text('Imprimerie Ogooué - Moanda, Gabon', pageWidth / 2, pageHeight - 15, { align: 'center' });
-      pdf.text('Carrefour Fina en face de FINAM', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      pdf.text('RCCM : RG/FCV 2023A0407 | NIF : 256598U', pageWidth / 2, pageHeight - 20, { align: 'center' });
+      pdf.text('Siege social : Carrefour Fina en face de Finam Moanda - Gabon', pageWidth / 2, pageHeight - 15, { align: 'center' });
+      pdf.text('Tel : 060 44 46 34 / 074 42 41 42 | Email : imprimerieogooue@gmail.com', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
       // Save PDF
       const fileName = `Catalogue_${generationType === 'selection' ? 'Selection' : 

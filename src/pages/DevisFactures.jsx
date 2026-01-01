@@ -209,7 +209,9 @@ export default function DevisFactures() {
     // Footer
     pdf.setFontSize(8);
     pdf.setTextColor(100, 100, 100);
-    pdf.text('Imprimerie Ogooué - Moanda, Gabon', 105, 285, { align: 'center' });
+    pdf.text('RCCM : RG/FCV 2023A0407 | NIF : 256598U', 105, 275, { align: 'center' });
+    pdf.text('Siege social : Carrefour Fina en face de Finam Moanda - Gabon', 105, 280, { align: 'center' });
+    pdf.text('Tel : 060 44 46 34 / 074 42 41 42 | Email : imprimerieogooue@gmail.com', 105, 285, { align: 'center' });
     
     pdf.save(`${doc.numero}.pdf`);
     toast.success('PDF téléchargé');
