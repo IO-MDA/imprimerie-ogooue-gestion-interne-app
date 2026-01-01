@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { base44 } from '@/api/base44Client';
 
 export default function AiAssistant({ conversation, messages, onUseSuggestion }) {
   const [suggestions, setSuggestions] = useState([]);
