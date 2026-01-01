@@ -124,23 +124,12 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setLineWidth(0.5);
           pdf.rect(15, yPos - 5, pageWidth - 30, 50);
           
-          // Product image with improved error handling
-          if (produit.photos && produit.photos.length > 0 && produit.photos[0]) {
-            try {
-              const imageUrl = produit.photos[0];
-              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                // Placeholder box for image
-                pdf.setFillColor(240, 240, 240);
-                pdf.rect(20, yPos, 30, 30, 'F');
-                pdf.setFontSize(8);
-                pdf.setTextColor(150, 150, 150);
-                pdf.text('PHOTO', 35, yPos + 16, { align: 'center' });
-              }
-            } catch (e) {
-              // Silently handle image errors
-              console.log('Image non chargée pour:', produit.nom);
-            }
-          }
+          // Product image placeholder
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(20, yPos, 30, 30, 'F');
+          pdf.setFontSize(8);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('PHOTO', 35, yPos + 16, { align: 'center' });
           
           // Product details
           const textStartX = produit.photos?.length > 0 ? 55 : 20;
@@ -159,7 +148,8 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setFontSize(11);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(0, 120, 215);
-          const prixText = `${produit.prix_unitaire.toLocaleString()} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
+          const prix = String(Math.round(produit.prix_unitaire || 0));
+          const prixText = prix + ' FCFA' + (produit.prix_a_partir_de ? ' (a partir de)' : '');
           pdf.text(prixText, textStartX, yPos + 30);
           
           // Delivery time
