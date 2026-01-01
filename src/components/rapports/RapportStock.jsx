@@ -122,9 +122,18 @@ export default function RapportStock() {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
     
-    // Header
+    // Header with logo
     pdf.setFillColor(255, 185, 0);
     pdf.rect(0, 0, pageWidth, 40, 'F');
+    
+    // Add logo
+    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
+    try {
+      pdf.addImage(logoUrl, 'PNG', pageWidth / 2 - 12.5, 8, 25, 25);
+    } catch (e) {
+      console.log('Logo loading error, continuing without logo');
+    }
+    
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
