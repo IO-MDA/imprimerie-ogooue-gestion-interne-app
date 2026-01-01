@@ -2,99 +2,159 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Copy, Check, FileText, Send, AlertCircle, TrendingUp } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, Zap, FileText, Package, AlertCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 
+const INTENTION_CONFIG = {
+  devis: {
+    label: 'Demande de devis',
+    icon: FileText,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    prompt: `Le client demande un devis. Génère une réponse professionnelle qui:
+- Accueille chaleureusement le client
+- Demande les détails nécessaires (type de produit, quantité, format, délai)
+- Mentionne nos spécialités (flyers, t-shirts, banderoles, mugs, etc.)
+- Propose un rendez-vous ou un échange pour finaliser`,
+    actions: ['Créer devis', 'Demander détails', 'Proposer catalogue']
+  },
+  commande: {
+    label: 'Commande',
+    icon: Package,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50',
+    prompt: `Le client souhaite passer commande. Génère une réponse qui:
+- Confirme la réception de la commande
+- Récapitule les éléments (si mentionnés)
+- Indique le délai de production (3-5 jours ouvrés)
+- Demande la validation et les éléments manquants si besoin`,
+    actions: ['Confirmer commande', 'Créer facture', 'Demander visuel']
+  },
+  reclamation: {
+    label: 'Réclamation',
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    prompt: `Le client a une réclamation. Génère une réponse empathique qui:
+- S'excuse pour le désagrément
+- Demande des détails sur le problème
+- Propose une solution (remboursement, remplacement, geste commercial)
+- Assure un suivi prioritaire`,
+    actions: ['S\'excuser', 'Proposer solution', 'Escalader']
+  },
+  suivi: {
+    label: 'Suivi de commande',
+    icon: MessageSquare,
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50',
+    prompt: `Le client demande un suivi. Génère une réponse qui:
+- Rassure le client
+- Indique où en est la commande
+- Donne une date de livraison estimée
+- Propose d'envoyer des photos de l'avancement si possible`,
+    actions: ['Vérifier statut', 'Envoyer photo', 'Confirmer livraison']
+  },
+  information: {
+    label: 'Demande d\'info',
+    icon: Sparkles,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    prompt: `Le client demande des informations. Génère une réponse qui:
+- Répond clairement à la question
+- Donne des exemples concrets de nos produits/services
+- Propose d'envoyer un catalogue ou des échantillons
+- Encourage à passer commande`,
+    actions: ['Envoyer catalogue', 'Expliquer processus', 'Donner tarifs']
+  }
+};
+
 export default function AiAssistant({ conversation, messages, onUseSuggestion }) {
   const [suggestions, setSuggestions] = useState([]);
+  const [quickActions, setQuickActions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [autoDetecting, setAutoDetecting] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
-  const [autoDetected, setAutoDetected] = useState(false);
-  const [user, setUser] = useState(null);
-  const [stats, setStats] = useState({ total: 0, used: 0, actions: 0 });
+  const [detectedIntention, setDetectedIntention] = useState(null);
 
+  // Auto-detect intention when conversation changes
   useEffect(() => {
-    loadUser();
-    if (conversation) {
-      loadStats();
+    if (conversation && messages && messages.length > 0) {
+      autoDetectIntention();
+    } else {
+      setDetectedIntention(null);
+      setSuggestions([]);
+      setQuickActions([]);
     }
-  }, [conversation]);
+  }, [conversation?.id]);
 
-  useEffect(() => {
-    // Auto-détection et suggestions automatiques quand conversation change
-    if (conversation && messages.length > 0 && !autoDetected) {
-      autoGenerateSuggestions();
-    }
-  }, [conversation, messages]);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      setUser(userData);
-    } catch (e) {
-      console.error('Error loading user:', e);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      const interactions = await base44.entities.InteractionIA.filter({ 
-        conversation_id: conversation.id 
-      });
-      setStats({
-        total: interactions.length,
-        used: interactions.filter(i => i.utilise).length,
-        actions: interactions.filter(i => i.type_interaction === 'action_rapide').length
-      });
-    } catch (e) {
-      console.error('Error loading stats:', e);
-    }
-  };
-
-  const logInteraction = async (type, data = {}) => {
-    if (!conversation || !user) return;
-    
-    try {
-      await base44.entities.InteractionIA.create({
-        conversation_id: conversation.id,
-        type_interaction: type,
-        intention_detectee: conversation.intention_detectee,
-        operateur: user.email,
-        operateur_nom: user.full_name || user.email,
-        ...data
-      });
-      loadStats();
-    } catch (e) {
-      console.error('Error logging interaction:', e);
-    }
-  };
-
-  const autoGenerateSuggestions = async () => {
+  const autoDetectIntention = async () => {
     if (!conversation || !messages || messages.length === 0) return;
-    
-    setAutoDetected(true);
-    setLoading(true);
+
+    setAutoDetecting(true);
     try {
-      const contextPrompt = `Tu es un assistant IA pour l'Imprimerie Ogooué au Gabon.
+      const contextMessages = messages.slice(-5).map(m => 
+        `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`
+      ).join('\n');
 
-Client: ${conversation.client_nom}
-Plateforme: ${conversation.plateforme}
-Intention détectée: ${conversation.intention_detectee || 'non définie'}
+      const detectionPrompt = `Analyse cette conversation et identifie l'intention principale du client.
 
-Derniers messages:
-${messages.slice(-5).map(m => `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`).join('\n')}
+Conversation:
+${contextMessages}
 
-Génère 3 réponses professionnelles et adaptées pour ce contexte d'imprimerie (flyers, t-shirts, banderoles, mugs, etc.). Chaque réponse doit être courte, professionnelle et inclure:
-- Une salutation appropriée
-- Une réponse au besoin du client
-- Une proposition de valeur
-- Un appel à l'action
+Choisis parmi: devis, commande, reclamation, suivi, information, autre
 
-Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenant 3 objets {type, text}`;
+Retourne uniquement l'intention détectée.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: contextPrompt,
+        prompt: detectionPrompt
+      });
+
+      const intention = result.toLowerCase().trim();
+      setDetectedIntention(intention);
+
+      // Update conversation with detected intention
+      if (conversation.intention_detectee !== intention && intention !== 'autre') {
+        await base44.entities.ConversationClient.update(conversation.id, {
+          intention_detectee: intention
+        });
+      }
+
+      // Auto-generate suggestions based on intention
+      if (INTENTION_CONFIG[intention]) {
+        await generateSuggestionsForIntention(intention);
+      }
+    } catch (e) {
+      console.error('Auto-detection error:', e);
+    } finally {
+      setAutoDetecting(false);
+    }
+  };
+
+  const generateSuggestionsForIntention = async (intention) => {
+    const config = INTENTION_CONFIG[intention];
+    if (!config) return;
+
+    setLoading(true);
+    try {
+      const contextMessages = messages.slice(-5).map(m => 
+        `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`
+      ).join('\n');
+
+      const fullPrompt = `Tu es un assistant IA pour l'Imprimerie Ogooué au Gabon.
+
+Client: ${conversation.client_nom}
+Intention détectée: ${config.label}
+
+Derniers messages:
+${contextMessages}
+
+${config.prompt}
+
+Génère 3 réponses différentes (courte, moyenne, détaillée). Format JSON uniquement.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: fullPrompt,
         response_json_schema: {
           type: "object",
           properties: {
@@ -112,26 +172,87 @@ Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenan
         }
       });
 
-      const generatedSuggestions = result.suggestions || [];
-      setSuggestions(generatedSuggestions);
-      
-      // Log chaque suggestion générée
-      for (const suggestion of generatedSuggestions) {
-        await logInteraction('suggestion_generee', {
-          contenu_genere: suggestion.text,
-          utilise: false
-        });
-      }
+      setSuggestions(result.suggestions || []);
+      setQuickActions(config.actions || []);
+
+      // Log interaction
+      await base44.entities.InteractionIA.create({
+        conversation_id: conversation.id,
+        client_nom: conversation.client_nom,
+        intention_detectee: intention,
+        suggestion_generee: JSON.stringify(result.suggestions),
+        action_suggeree: config.actions?.join(', '),
+        utilisee: false,
+        contexte: contextMessages
+      });
+
+      toast.success('Suggestions générées automatiquement');
     } catch (e) {
+      toast.error('Erreur lors de la génération');
       console.error('AI generation error:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateSuggestions = async () => {
-    setAutoDetected(true);
-    await autoGenerateSuggestions();
+  const generateCustomSuggestions = async () => {
+    if (!conversation || !messages || messages.length === 0) {
+      toast.error('Pas assez de contexte');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const contextMessages = messages.slice(-5).map(m => 
+        `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`
+      ).join('\n');
+
+      const prompt = `Tu es un assistant IA pour l'Imprimerie Ogooué au Gabon.
+
+Client: ${conversation.client_nom}
+
+Derniers messages:
+${contextMessages}
+
+Génère 3 réponses professionnelles adaptées au contexte. Format JSON uniquement.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: { type: "string" },
+                  text: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setSuggestions(result.suggestions || []);
+
+      // Log interaction
+      await base44.entities.InteractionIA.create({
+        conversation_id: conversation.id,
+        client_nom: conversation.client_nom,
+        suggestion_generee: JSON.stringify(result.suggestions),
+        utilisee: false,
+        contexte: contextMessages
+      });
+
+      toast.success('Nouvelles suggestions générées');
+    } catch (e) {
+      toast.error('Erreur lors de la génération');
+      console.error('AI generation error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copySuggestion = (text, index) => {
@@ -141,70 +262,49 @@ Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenan
     toast.success('Copié');
   };
 
-  const handleUseSuggestion = async (suggestion) => {
-    onUseSuggestion(suggestion.text);
-    await logInteraction('suggestion_utilisee', {
-      contenu_genere: suggestion.text,
-      utilise: true
-    });
-  };
-
-  const handleQuickAction = async (action, message) => {
-    onUseSuggestion(message);
-    await logInteraction('action_rapide', {
-      action: action,
-      contenu_genere: message,
-      utilise: true
-    });
-    toast.success(`Action "${action}" exécutée`);
-  };
-
-  const getQuickActions = () => {
-    const intention = conversation?.intention_detectee;
+  const useSuggestion = async (text, index) => {
+    onUseSuggestion(text);
     
-    const actions = {
-      devis: [
-        {
-          label: 'Demander détails',
-          icon: FileText,
-          message: `Bonjour ${conversation.client_nom},\n\nPour établir votre devis, j'aurais besoin de quelques informations :\n- Type de support souhaité\n- Quantité\n- Format/dimensions\n- Délai souhaité\n\nMerci !`
-        },
-        {
-          label: 'Envoyer tarifs',
-          icon: Send,
-          message: `Bonjour ${conversation.client_nom},\n\nVoici nos tarifs indicatifs. Je reste à votre disposition pour un devis personnalisé selon vos besoins.\n\nN'hésitez pas !`
-        }
-      ],
-      commande: [
-        {
-          label: 'Confirmer réception',
-          icon: Check,
-          message: `Parfait ${conversation.client_nom} !\n\nVotre commande est bien notée. Nous démarrons la production et vous tenons informé(e) de l'avancement.\n\nDélai estimé : 3-5 jours ouvrés.`
-        },
-        {
-          label: 'Demander visuel',
-          icon: FileText,
-          message: `Bonjour ${conversation.client_nom},\n\nPour avancer sur votre commande, pourriez-vous nous envoyer :\n- Votre logo/visuel\n- Vos préférences de couleurs\n- Texte à intégrer\n\nFormat accepté : PNG, JPG, PDF, AI`
-        }
-      ],
-      reclamation: [
-        {
-          label: 'Excuses et solution',
-          icon: AlertCircle,
-          message: `Bonjour ${conversation.client_nom},\n\nNous sommes vraiment désolés pour ce désagrément. Nous prenons votre réclamation très au sérieux.\n\nPouvez-vous nous donner plus de détails pour que nous puissions résoudre cela rapidement ?`
-        }
-      ],
-      information: [
-        {
-          label: 'Détails services',
-          icon: TrendingUp,
-          message: `Bonjour ${conversation.client_nom},\n\nNous proposons :\n- Impression (flyers, cartes, affiches)\n- Personnalisation textile (t-shirts, casquettes)\n- Signalétique (banderoles, panneaux)\n- Objets publicitaires (mugs, porte-clés)\n\nQue recherchez-vous exactement ?`
-        }
-      ]
-    };
-
-    return actions[intention] || [];
+    // Update interaction as used
+    try {
+      const interactions = await base44.entities.InteractionIA.filter({
+        conversation_id: conversation.id
+      }, '-created_date', 1);
+      
+      if (interactions.length > 0) {
+        await base44.entities.InteractionIA.update(interactions[0].id, {
+          utilisee: true
+        });
+      }
+    } catch (e) {
+      console.error('Error updating interaction:', e);
+    }
   };
+
+  const handleQuickAction = (action) => {
+    toast.info(`Action "${action}" - À implémenter selon votre workflow`);
+    // Here you can add specific logic for each action
+  };
+
+  if (!conversation) {
+    return (
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            Assistant IA Imprimerie
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8 text-center">
+          <Sparkles className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">Sélectionnez une conversation</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const intentionConfig = detectedIntention && INTENTION_CONFIG[detectedIntention];
+  const IntentionIcon = intentionConfig?.icon || Sparkles;
 
   return (
     <Card className="border-0 shadow-lg">
@@ -215,125 +315,117 @@ Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenan
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
-        {!conversation ? (
-          <div className="text-center py-8 text-slate-500">
-            <p>Sélectionnez une conversation</p>
+        {/* Auto-detected Intention */}
+        {autoDetecting ? (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+            <p className="text-xs text-blue-900">Analyse de l'intention...</p>
+          </div>
+        ) : intentionConfig ? (
+          <div className={`p-3 border rounded-lg ${intentionConfig.bgColor}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <IntentionIcon className={`w-4 h-4 ${intentionConfig.color}`} />
+              <p className="text-xs font-semibold text-slate-900">Intention détectée:</p>
+            </div>
+            <Badge className={`${intentionConfig.color} bg-white`}>
+              {intentionConfig.label}
+            </Badge>
           </div>
         ) : (
-          <>
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-2 bg-slate-50 rounded-lg text-center">
-                <p className="text-xs text-slate-500">Suggestions</p>
-                <p className="text-lg font-bold text-slate-900">{stats.total}</p>
-              </div>
-              <div className="p-2 bg-green-50 rounded-lg text-center">
-                <p className="text-xs text-green-600">Utilisées</p>
-                <p className="text-lg font-bold text-green-700">{stats.used}</p>
-              </div>
-              <div className="p-2 bg-blue-50 rounded-lg text-center">
-                <p className="text-xs text-blue-600">Actions</p>
-                <p className="text-lg font-bold text-blue-700">{stats.actions}</p>
-              </div>
-            </div>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <p className="text-xs text-slate-600">Intention: Non détectée</p>
+          </div>
+        )}
 
-            {/* Info */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-medium text-blue-900 mb-1">Intention détectée:</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge className="bg-blue-600">
-                  {conversation.intention_detectee || 'Non défini'}
-                </Badge>
-                {conversation.tags?.map(tag => (
-                  <Badge key={tag} variant="outline">{tag}</Badge>
-                ))}
-              </div>
+        {/* Quick Actions */}
+        {quickActions.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-slate-700">Actions rapides suggérées:</p>
+            <div className="grid grid-cols-1 gap-2">
+              {quickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction(action)}
+                  className="justify-start"
+                >
+                  <Zap className="w-3 h-3 mr-2 text-amber-500" />
+                  {action}
+                </Button>
+              ))}
             </div>
+          </div>
+        )}
 
-            {/* Quick Actions */}
-            {getQuickActions().length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Actions rapides:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {getQuickActions().map((action, index) => {
-                    const Icon = action.icon;
-                    return (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickAction(action.label, action.message)}
-                        className="h-auto py-2 px-3 text-xs flex flex-col items-center gap-1"
-                      >
-                        <Icon className="w-4 h-4" />
-                        {action.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
+        {/* Generate Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={generateCustomSuggestions}
+            disabled={loading || autoDetecting}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            size="sm"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3 mr-2" />
+                Régénérer
+              </>
             )}
+          </Button>
+        </div>
 
-            {/* Generate Button */}
-            <Button
-              onClick={generateSuggestions}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyse en cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {autoDetected ? 'Régénérer' : 'Générer des suggestions'}
-                </>
-              )}
-            </Button>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-slate-700">Réponses suggérées:</p>
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-slate-50 border rounded-lg hover:shadow-md transition-all"
+        {/* Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-slate-700">Réponses suggérées:</p>
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="p-3 bg-slate-50 border rounded-lg hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs">
+                    {suggestion.type}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copySuggestion(suggestion.text, index)}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <Badge variant="outline" className="text-xs">
-                        {suggestion.type}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copySuggestion(suggestion.text, index)}
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {suggestion.text}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2"
-                      onClick={() => handleUseSuggestion(suggestion)}
-                    >
-                      Utiliser cette réponse
-                    </Button>
-                  </div>
-                ))}
+                    {copiedIndex === index ? (
+                      <Check className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {suggestion.text}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => useSuggestion(suggestion.text, index)}
+                >
+                  Utiliser cette réponse
+                </Button>
               </div>
-            )}
-          </>
+            ))}
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loading && suggestions.length === 0 && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+          </div>
         )}
       </CardContent>
     </Card>
