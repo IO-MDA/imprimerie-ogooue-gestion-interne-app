@@ -224,23 +224,23 @@ export default function Bilans() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     
-    // Header
+    // Header with logo
     pdf.setFillColor(59, 130, 246);
     pdf.rect(0, 0, pageWidth, 40, 'F');
     
     // Add logo
     const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
     try {
-      pdf.addImage(logoUrl, 'PNG', pageWidth - 45, 5, 30, 30);
+      pdf.addImage(logoUrl, 'PNG', 15, 8, 25, 25);
     } catch (e) {
-      console.log('Logo non chargé');
+      console.log('Logo loading error, continuing without logo');
     }
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
-    pdf.text('Imprimerie Ogooué', 20, 20);
+    pdf.text('Imprimerie OGOOUE', 45, 20);
     pdf.setFontSize(14);
-    pdf.text('Bilan Financier', 20, 32);
+    pdf.text('Bilan Financier', 45, 32);
 
     // Period
     pdf.setTextColor(0, 0, 0);

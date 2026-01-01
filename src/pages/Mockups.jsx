@@ -267,24 +267,24 @@ Soyez précis et professionnel.`;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // En-tête
+    // En-tête with logo
     pdf.setFillColor(59, 130, 246);
     pdf.rect(0, 0, pageWidth, 40, 'F');
     
     // Add logo
     const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
     try {
-      pdf.addImage(logoUrl, 'PNG', pageWidth - 45, 5, 30, 30);
+      pdf.addImage(logoUrl, 'PNG', 15, 8, 25, 25);
     } catch (e) {
-      console.log('Logo non chargé');
+      console.log('Logo loading error, continuing without logo');
     }
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
-    pdf.text('Imprimerie OGOOUE', 20, 25);
+    pdf.text('Imprimerie OGOOUE', 45, 20);
     
     pdf.setFontSize(12);
-    pdf.text('Proposition de Mockup', 20, 35);
+    pdf.text('Proposition de Mockup', 45, 32);
 
     // Info client
     pdf.setTextColor(0, 0, 0);
