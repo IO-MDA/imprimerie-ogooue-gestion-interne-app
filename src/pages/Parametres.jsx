@@ -42,6 +42,7 @@ export default function Parametres() {
     nom_compte: '',
     url: ''
   });
+  const [whatsappNumber, setWhatsappNumber] = useState('241604464634');
 
   useEffect(() => {
     loadData();
@@ -112,6 +113,26 @@ export default function Parametres() {
     toast.success('Réseau social ajouté');
     setShowSocialForm(false);
     setSocialForm({ plateforme: 'facebook', nom_compte: '', url: '' });
+    loadData();
+  };
+
+  const handleConnectWhatsApp = async () => {
+    const whatsappExists = reseaux.find(r => r.plateforme === 'whatsapp');
+    
+    if (whatsappExists) {
+      toast.info('WhatsApp Business déjà connecté');
+      return;
+    }
+
+    await base44.entities.ReseauSocial.create({
+      plateforme: 'whatsapp',
+      nom_compte: 'Imprimerie Ogooué Moanda',
+      url: 'https://wa.me/message/7WVKSVB3RHOUA1',
+      connecte: true,
+      derniere_synchro: new Date().toISOString()
+    });
+
+    toast.success('WhatsApp Business connecté');
     loadData();
   };
 
@@ -269,11 +290,42 @@ export default function Parametres() {
             </Button>
           </div>
 
+          {/* WhatsApp Business Quick Connect */}
+          <Card className="border-0 shadow-lg shadow-green-200/50 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-lg">
+                    <MessageCircle className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg text-slate-900">WhatsApp Business</p>
+                    <p className="text-sm text-slate-600">Imprimerie Ogooué Moanda</p>
+                    <p className="text-xs text-slate-500 mt-1">+241 060 44 46 34</p>
+                  </div>
+                </div>
+                <div>
+                  {reseaux.find(r => r.plateforme === 'whatsapp') ? (
+                    <Badge className="bg-green-100 text-green-700">✓ Connecté</Badge>
+                  ) : (
+                    <Button 
+                      onClick={handleConnectWhatsApp}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Connecter
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {reseaux.length === 0 ? (
             <Card className="border-0 shadow-lg shadow-slate-200/50">
               <CardContent className="py-12 text-center">
                 <Share2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 mb-4">Aucun réseau social connecté</p>
+                <p className="text-slate-500 mb-4">Aucun autre réseau social connecté</p>
                 <p className="text-sm text-slate-400 mb-4">
                   Connectez vos réseaux sociaux pour centraliser tous vos messages clients
                 </p>
