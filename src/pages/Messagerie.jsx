@@ -245,7 +245,7 @@ Format JSON requis:
       const devis = await base44.entities.Devis.create(devisData);
 
       // Générer le PDF
-      const { generateQuotePDF } = await import('@/utils/pdfGenerator');
+      const { generateQuotePDF } = await import('@/components/utils/pdfGenerator');
       const pdf = await generateQuotePDF(devisData);
       const pdfBlob = pdf.output('blob');
 
@@ -338,7 +338,7 @@ Format JSON requis:
       const facture = await base44.entities.Facture.create(factureData);
 
       // Générer le PDF
-      const { generateInvoicePDF } = await import('@/utils/pdfGenerator');
+      const { generateInvoicePDF } = await import('@/components/utils/pdfGenerator');
       const pdf = await generateInvoicePDF(factureData);
       const pdfBlob = pdf.output('blob');
 
