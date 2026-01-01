@@ -16,10 +16,7 @@ import {
   Printer,
   Send,
   CheckCircle,
-  ArrowRight,
-  Download,
-  Mail,
-  Loader2
+  ArrowRight
 } from 'lucide-react';
 import DocumentForm from '@/components/documents/DocumentForm';
 import moment from 'moment';
@@ -34,8 +31,6 @@ export default function DevisFactures() {
   const [editingDoc, setEditingDoc] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -114,67 +109,6 @@ export default function DevisFactures() {
     loadData();
   };
 
-  const downloadPDF = async (doc, type) => {
-    setDownloadingPdf(true);
-    try {
-      const { generateQuotePDF, generateInvoicePDF } = await import('@/components/utils/pdfGenerator');
-      const pdf = type === 'devis' ? await generateQuotePDF(doc) : await generateInvoicePDF(doc);
-      
-      const pdfBlob = pdf.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${type}_${doc.numero}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-      
-      toast.success('PDF téléchargé');
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors du téléchargement');
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
-
-  const sendPDFByEmail = async (doc, type) => {
-    if (!doc.client_email) {
-      toast.error('Aucun email client renseigné');
-      return;
-    }
-
-    setSendingEmail(true);
-    try {
-      const { generateQuotePDF, generateInvoicePDF } = await import('@/components/utils/pdfGenerator');
-      const pdf = type === 'devis' ? await generateQuotePDF(doc) : await generateInvoicePDF(doc);
-      const pdfBlob = pdf.output('blob');
-      
-      const file = new File([pdfBlob], `${type}_${doc.numero}.pdf`, { type: 'application/pdf' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      await base44.integrations.Core.SendEmail({
-        from_name: 'Imprimerie Ogooué',
-        to: doc.client_email,
-        subject: `${type === 'devis' ? 'Devis' : 'Facture'} ${doc.numero} - Imprimerie Ogooué`,
-        body: `Bonjour ${doc.client_nom},\n\nVeuillez trouver ci-joint ${type === 'devis' ? 'votre devis' : 'votre facture'} n°${doc.numero}.\n\nLien du document: ${file_url}\n\nCordialement,\nImprimerie Ogooué\nMoanda, Gabon\nContacts : +241 060 44 46 34/ 074 42 41 42`
-      });
-      
-      if (type === 'devis') {
-        await base44.entities.Devis.update(doc.id, { statut: 'envoye' });
-      } else {
-        await base44.entities.Facture.update(doc.id, { statut: 'envoyee' });
-      }
-      
-      toast.success('Email envoyé avec succès');
-      loadData();
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de l\'envoi');
-    } finally {
-      setSendingEmail(false);
-    }
-  };
-
   const getStatusBadge = (type, statut) => {
     const configs = {
       devis: {
@@ -237,24 +171,6 @@ export default function DevisFactures() {
               </Button>
               <Button variant="ghost" size="icon" onClick={() => { setEditingDoc(doc); setActiveTab(type); setShowForm(true); }}>
                 <Edit className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => downloadPDF(doc, type)}
-                disabled={downloadingPdf}
-                className="text-blue-600"
-              >
-                {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => sendPDFByEmail(doc, type)}
-                disabled={sendingEmail || !doc.client_email}
-                className="text-purple-600"
-              >
-                {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
               </Button>
               {type === 'devis' && doc.statut === 'accepte' && (
                 <Button variant="ghost" size="icon" onClick={() => convertToFacture(doc)} className="text-emerald-600">
