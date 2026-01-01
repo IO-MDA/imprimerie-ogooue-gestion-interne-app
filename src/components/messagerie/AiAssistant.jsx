@@ -291,21 +291,37 @@ Génère 3 réponses professionnelles adaptées au contexte. Format JSON uniquem
 
   const handleQuickAction = async (action) => {
     if (action === 'Envoyer catalogue' || action.includes('catalogue')) {
-      // Propose d'envoyer le catalogue
       const message = `Bonjour ${conversation.client_nom},\n\nVoici notre catalogue de produits. N'hésitez pas si vous avez des questions !\n\n[Le catalogue sera joint automatiquement]`;
       onUseSuggestion(message);
-      await logInteraction('action_rapide', {
-        action: 'Envoi catalogue',
-        contenu_genere: message,
-        utilise: true
-      });
+      
+      try {
+        await base44.entities.InteractionIA.create({
+          conversation_id: conversation.id,
+          client_nom: conversation.client_nom,
+          type_interaction: 'action_rapide',
+          action_suggeree: 'Envoi catalogue',
+          suggestion_generee: message,
+          utilisee: true
+        });
+      } catch (e) {
+        console.error('Error logging interaction:', e);
+      }
+      
       toast.success('Catalogue prêt à être envoyé');
     } else {
+      try {
+        await base44.entities.InteractionIA.create({
+          conversation_id: conversation.id,
+          client_nom: conversation.client_nom,
+          type_interaction: 'action_rapide',
+          action_suggeree: action,
+          utilisee: true
+        });
+      } catch (e) {
+        console.error('Error logging interaction:', e);
+      }
+      
       toast.info(`Action "${action}" effectuée`);
-      await logInteraction('action_rapide', {
-        action: action,
-        utilise: true
-      });
     }
   };
 
