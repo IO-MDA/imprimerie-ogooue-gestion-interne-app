@@ -118,24 +118,24 @@ export default function DevisFactures() {
   const downloadPDF = (doc, type) => {
     const pdf = new jsPDF();
     
-    // Header with logo
+    // Header
     pdf.setFillColor(37, 99, 235);
     pdf.rect(0, 0, 210, 40, 'F');
     
     // Add logo
     const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
     try {
-      pdf.addImage(logoUrl, 'PNG', 15, 8, 25, 25);
+      pdf.addImage(logoUrl, 'PNG', 165, 5, 30, 30);
     } catch (e) {
-      console.log('Logo loading error, continuing without logo');
+      console.log('Logo non chargé');
     }
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
-    pdf.text('Imprimerie OGOOUE', 45, 20);
+    pdf.text('Imprimerie OGOOUE', 20, 20);
     pdf.setFontSize(10);
-    pdf.text('Moanda, Gabon', 45, 28);
-    pdf.text('Carrefour Fina en face de FINAM', 45, 34);
+    pdf.text('Moanda, Gabon', 20, 28);
+    pdf.text('Carrefour Fina en face de FINAM', 20, 34);
     
     // Document type and number
     pdf.setTextColor(0, 0, 0);
