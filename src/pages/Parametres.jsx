@@ -404,7 +404,11 @@ export default function Parametres() {
                 </div>
                 <div>
                   <Label>Ville</Label>
-                  <Input value="Libreville" disabled />
+                  <Input value="Moanda" disabled />
+                </div>
+                <div>
+                  <Label>Adresse</Label>
+                  <Input value="Carrefour Fina en face de FINAM" disabled />
                 </div>
                 <div>
                   <Label>Devise</Label>

@@ -418,6 +418,37 @@ export default function Catalogue() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Stock Alert Dialog */}
+      <Dialog open={showStockAlert} onOpenChange={setShowStockAlert}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              Alertes Stock Bas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {lowStockProducts.map(produit => (
+              <Card key={produit.id} className="border border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{produit.nom}</p>
+                      <p className="text-sm text-slate-500">{produit.categorie}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500">Stock actuel</p>
+                      <p className="text-2xl font-bold text-amber-600">{produit.stock_actuel || 0}</p>
+                      <p className="text-xs text-slate-400">Min: {produit.stock_minimum || 0}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

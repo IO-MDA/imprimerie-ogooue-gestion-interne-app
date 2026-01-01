@@ -16,7 +16,8 @@ import {
   Printer,
   Send,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Download
 } from 'lucide-react';
 import DocumentForm from '@/components/documents/DocumentForm';
 import moment from 'moment';
@@ -109,6 +110,90 @@ export default function DevisFactures() {
     loadData();
   };
 
+  const downloadPDF = async (doc, type) => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF();
+
+      // En-tête
+      pdf.setFontSize(20);
+      pdf.text(type === 'devis' ? 'DEVIS' : 'FACTURE', 20, 20);
+      
+      pdf.setFontSize(10);
+      pdf.text('Imprimerie Ogooué', 20, 30);
+      pdf.text('Moanda, Gabon', 20, 35);
+      pdf.text('Carrefour Fina en face de FINAM', 20, 40);
+      
+      // Numéro et date
+      pdf.setFontSize(12);
+      pdf.text(`N° ${doc.numero}`, 150, 20);
+      pdf.setFontSize(10);
+      pdf.text(`Date: ${moment(doc.date_emission).format('DD/MM/YYYY')}`, 150, 30);
+      
+      // Client
+      pdf.setFontSize(12);
+      pdf.text('Client:', 20, 55);
+      pdf.setFontSize(10);
+      pdf.text(doc.client_nom, 20, 62);
+      if (doc.client_email) pdf.text(doc.client_email, 20, 67);
+      if (doc.client_telephone) pdf.text(doc.client_telephone, 20, 72);
+      
+      // Tableau des lignes
+      let y = 85;
+      pdf.setFontSize(10);
+      pdf.text('Description', 20, y);
+      pdf.text('Qté', 120, y);
+      pdf.text('Prix U.', 145, y);
+      pdf.text('Total', 175, y);
+      
+      y += 7;
+      pdf.line(20, y, 200, y);
+      y += 5;
+      
+      doc.lignes?.forEach(ligne => {
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(ligne.description?.substring(0, 40) || '', 20, y);
+        pdf.text(String(ligne.quantite || 0), 120, y);
+        pdf.text(String((ligne.prix_unitaire || 0).toLocaleString()), 145, y);
+        pdf.text(String((ligne.total || 0).toLocaleString()), 175, y);
+        y += 7;
+      });
+      
+      // Totaux
+      y += 10;
+      pdf.line(140, y, 200, y);
+      y += 7;
+      pdf.text('Sous-total:', 140, y);
+      pdf.text(`${(doc.sous_total || 0).toLocaleString()} FCFA`, 175, y);
+      y += 7;
+      pdf.text(`TVA (${doc.tva}%):`, 140, y);
+      pdf.text(`${((doc.sous_total || 0) * (doc.tva || 0) / 100).toLocaleString()} FCFA`, 175, y);
+      y += 7;
+      pdf.setFontSize(12);
+      pdf.text('TOTAL:', 140, y);
+      pdf.text(`${(doc.total || 0).toLocaleString()} FCFA`, 175, y);
+      
+      // Notes
+      if (doc.notes) {
+        y += 15;
+        pdf.setFontSize(9);
+        pdf.text('Notes:', 20, y);
+        y += 5;
+        const notes = pdf.splitTextToSize(doc.notes, 170);
+        pdf.text(notes, 20, y);
+      }
+      
+      pdf.save(`${type}-${doc.numero}.pdf`);
+      toast.success('PDF téléchargé');
+    } catch (e) {
+      toast.error('Erreur lors de la génération du PDF');
+      console.error(e);
+    }
+  };
+
   const getStatusBadge = (type, statut) => {
     const configs = {
       devis: {
@@ -168,6 +253,9 @@ export default function DevisFactures() {
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setSelectedDoc({ ...doc, type })}>
                 <Eye className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => downloadPDF(doc, type)} title="Télécharger PDF">
+                <Download className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => { setEditingDoc(doc); setActiveTab(type); setShowForm(true); }}>
                 <Edit className="w-4 h-4" />
@@ -299,7 +387,8 @@ export default function DevisFactures() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">Imprimerie Ogooué</h2>
-                  <p className="text-slate-500">Libreville, Gabon</p>
+                  <p className="text-slate-500">Moanda, Gabon</p>
+                  <p className="text-xs text-slate-400">Carrefour Fina en face de FINAM</p>
                 </div>
                 {getStatusBadge(selectedDoc.type, selectedDoc.statut)}
               </div>
