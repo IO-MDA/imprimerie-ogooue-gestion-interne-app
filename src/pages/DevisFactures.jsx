@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import RoleProtection from '@/components/auth/RoleProtection';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ export default function DevisFactures() {
   const [editingDoc, setEditingDoc] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -40,12 +42,14 @@ export default function DevisFactures() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [devisData, facturesData] = await Promise.all([
+    const [devisData, facturesData, userData] = await Promise.all([
       base44.entities.Devis.list('-created_date'),
-      base44.entities.Facture.list('-created_date')
+      base44.entities.Facture.list('-created_date'),
+      base44.auth.me()
     ]);
     setDevis(devisData);
     setFactures(facturesData);
+    setUser(userData);
     setIsLoading(false);
   };
 
@@ -301,6 +305,7 @@ export default function DevisFactures() {
   );
 
   return (
+    <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -501,5 +506,6 @@ export default function DevisFactures() {
         </DialogContent>
       </Dialog>
     </div>
+    </RoleProtection>
   );
 }

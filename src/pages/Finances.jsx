@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import RoleProtection from '@/components/auth/RoleProtection';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -259,6 +260,7 @@ export default function Finances() {
   }
 
   return (
+    <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -834,5 +836,6 @@ export default function Finances() {
         </DialogContent>
       </Dialog>
     </div>
+    </RoleProtection>
   );
 }

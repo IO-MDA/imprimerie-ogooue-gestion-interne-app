@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import RoleProtection from '@/components/auth/RoleProtection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -310,11 +311,13 @@ export default function Bilans() {
           <h2 className="text-xl font-bold text-slate-900 mb-2">Accès Restreint</h2>
           <p className="text-slate-600">Seuls les administrateurs peuvent accéder aux bilans et analyses.</p>
         </div>
-      </div>
-    );
-  }
+        </div>
+        </RoleProtection>
+        );
+        }
 
   return (
+    <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

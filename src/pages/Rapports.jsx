@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import RoleProtection from '@/components/auth/RoleProtection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export default function Rapports() {
   }
 
   return (
+    <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -133,5 +135,6 @@ export default function Rapports() {
         </TabsContent>
       </Tabs>
     </div>
+    </RoleProtection>
   );
 }

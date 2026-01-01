@@ -48,6 +48,8 @@ export default function Catalogue() {
   const [user, setUser] = useState(null);
   const [generatingCatalogue, setGeneratingCatalogue] = useState(false);
   
+  const isAdmin = user?.role === 'admin';
+  
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -261,28 +263,32 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
           <p className="text-slate-500">Gérez vos produits et générez des catalogues PDF</p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={genererCatalogueIA}
-            disabled={generatingCatalogue}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
-          >
-            {generatingCatalogue ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Génération IA...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Générer avec IA
-              </>
-            )}
-          </Button>
-          <Button onClick={() => { setEditingProduit(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nouveau produit
-          </Button>
+          {isAdmin && (
+            <Button 
+              variant="outline"
+              onClick={genererCatalogueIA}
+              disabled={generatingCatalogue}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+            >
+              {generatingCatalogue ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Génération IA...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Générer avec IA
+                </>
+              )}
+            </Button>
+          )}
+          {isAdmin && (
+            <Button onClick={() => { setEditingProduit(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nouveau produit
+            </Button>
+          )}
           <Button 
             variant="outline"
             onClick={() => setShowGenerator(true)}
@@ -474,30 +480,32 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                           </p>
                         )}
 
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => { setEditingProduit(produit); setShowForm(true); }}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => toggleActive(produit)}
-                          >
-                            {produit.actif ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDelete(produit)}
-                            className="text-rose-600"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        {isAdmin && (
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => { setEditingProduit(produit); setShowForm(true); }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => toggleActive(produit)}
+                            >
+                              {produit.actif ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDelete(produit)}
+                              className="text-rose-600"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
 
                         {/* Stock Badge */}
                         {(produit.stock_actuel !== undefined && produit.stock_actuel !== null) && (

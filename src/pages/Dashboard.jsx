@@ -382,5 +382,6 @@ export default function Dashboard() {
         </Card>
       </div>
     </div>
+    </RoleProtection>
   );
 }

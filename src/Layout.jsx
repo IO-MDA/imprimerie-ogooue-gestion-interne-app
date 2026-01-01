@@ -64,35 +64,39 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = user?.role === 'admin';
 
-  const navigation = [
-    { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList },
-    { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck },
-    { name: 'Projets', href: 'Projets', icon: LayoutDashboard },
-    { name: 'Tâches', href: 'Taches', icon: FileCheck },
-    { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard },
-    { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText },
-    { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText },
-    { name: 'Finances', href: 'Finances', icon: Receipt },
-    { name: 'Mockups IA', href: 'Mockups', icon: Printer },
-    { name: 'Prospection', href: 'Prospection', icon: Users },
-    { name: 'Événements', href: 'Evenements', icon: Bell },
-    { name: 'Annonces', href: 'Annonces', icon: Bell },
-    { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt },
-    { name: 'Catalogue produits', href: 'Catalogue', icon: Package },
-    { name: 'Clients', href: 'Clients', icon: Users },
-    { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages },
-  ];
-
-  if (isAdmin) {
-    navigation.push({ 
+  // Navigation selon le rôle
+  const allNavigation = [
+    { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'user'] },
+    { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'user'] },
+    { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'user'] },
+    { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'user'] },
+    { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'user'] },
+    { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'user'] },
+    { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'user'] },
+    { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin'] },
+    { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin'] },
+    { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin'] },
+    { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin'] },
+    { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
+    { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
+    { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin'] },
+    { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin'] },
+    { 
       name: 'Demandes modification', 
       href: 'DemandesModification', 
       icon: FileCheck,
-      badge: pendingRequests 
-    });
-    navigation.push({ name: 'Paramètres', href: 'Parametres', icon: Settings });
-  }
+      badge: pendingRequests,
+      roles: ['admin']
+    },
+    { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
+  ];
+
+  // Filtrer selon le rôle
+  const navigation = allNavigation.filter(item => 
+    item.roles.includes(user?.role || 'user')
+  );
 
   const handleLogout = () => {
     base44.auth.logout();
