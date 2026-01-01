@@ -16,6 +16,7 @@ import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
+import Rapports from './pages/Rapports';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "Prospection": Prospection,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
+    "Rapports": Rapports,
 }
 
 export const pagesConfig = {
