@@ -73,6 +73,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard },
     { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText },
     { name: 'Finances', href: 'Finances', icon: Receipt },
+    { name: 'Mockups IA', href: 'Mockups', icon: Printer },
     { name: 'Prospection', href: 'Prospection', icon: Users },
     { name: 'Événements', href: 'Evenements', icon: Bell },
     { name: 'Annonces', href: 'Annonces', icon: Bell },
