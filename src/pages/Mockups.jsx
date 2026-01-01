@@ -24,19 +24,84 @@ import {
   Flag,
   SquareStack
 } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 
-const MOCKUP_TYPES = [
-  { id: 'mug', name: 'Mug', icon: Coffee, colors: ['blanc', 'noir', 'rouge', 'bleu'] },
-  { id: 'tshirt', name: 'T-Shirt', icon: Shirt, colors: ['blanc', 'noir', 'rouge', 'bleu', 'vert', 'jaune', 'gris'] },
-  { id: 'polo', name: 'Polo', icon: Shirt, colors: ['blanc', 'noir', 'marine', 'rouge', 'gris'] },
-  { id: 'casquette', name: 'Casquette', icon: Palette, colors: ['noir', 'blanc', 'rouge', 'bleu', 'vert'] },
-  { id: 'banderole', name: 'Banderole', icon: Flag, sizes: ['2x1m', '3x1m', '4x2m', '5x2m', '6x3m'] },
-  { id: 'panneau', name: 'Panneau publicitaire', icon: SquareStack, sizes: ['A3', 'A2', 'A1', 'A0', '3x4m'] },
-  { id: 'flyer', name: 'Flyer', icon: FileText, sizes: ['A6', 'A5', 'A4'] },
-  { id: 'carte', name: 'Carte de visite', icon: CreditCard, sizes: ['standard (85x55mm)'] }
-];
+const MOCKUP_CATEGORIES = {
+  textile: {
+    name: 'Textile',
+    items: [
+      { id: 'tshirt', name: 'T-Shirt', icon: Shirt, colors: ['blanc', 'noir', 'rouge', 'bleu', 'vert', 'jaune', 'gris'] },
+      { id: 'polo', name: 'Polo', icon: Shirt, colors: ['blanc', 'noir', 'marine', 'rouge', 'gris'] },
+      { id: 'casquette', name: 'Casquette', icon: Palette, colors: ['noir', 'blanc', 'rouge', 'bleu', 'vert'] },
+      { id: 'tote_bag', name: 'Tote Bag', icon: Shirt, colors: ['blanc', 'noir', 'beige', 'rouge'] },
+      { id: 'tablier', name: 'Tablier', icon: Shirt, colors: ['blanc', 'noir', 'bleu', 'rouge'] },
+      { id: 'sac_tissu', name: 'Sac en tissu', icon: Shirt, colors: ['blanc', 'noir', 'beige'] }
+    ]
+  },
+  bureau: {
+    name: 'Bureau & Papeterie',
+    items: [
+      { id: 'carnet', name: 'Carnet', icon: FileText, sizes: ['A6', 'A5', 'A4'] },
+      { id: 'stylo', name: 'Stylo', icon: FileText, colors: ['blanc', 'noir', 'bleu', 'rouge'] },
+      { id: 'bloc_note', name: 'Bloc-notes', icon: FileText, sizes: ['A6', 'A5', 'A4'] },
+      { id: 'calendrier', name: 'Calendrier', icon: FileText, sizes: ['mural', 'bureau'] },
+      { id: 'chemise', name: 'Chemise à rabats', icon: FileText, colors: ['blanc', 'bleu', 'rouge', 'vert'] },
+      { id: 'enveloppe', name: 'Enveloppe', icon: FileText, sizes: ['C6', 'C5', 'C4'] },
+      { id: 'cachet', name: 'Cachet', icon: CreditCard, sizes: ['standard', 'personnalisé'] }
+    ]
+  },
+  communication: {
+    name: 'Communication',
+    items: [
+      { id: 'flyer', name: 'Flyer', icon: FileText, sizes: ['A6', 'A5', 'A4'] },
+      { id: 'carte', name: 'Carte de visite', icon: CreditCard, sizes: ['standard (85x55mm)', 'personnalisé'] },
+      { id: 'badge', name: 'Badge', icon: CreditCard, sizes: ['rond 50mm', 'carré 50mm', 'rectangulaire'] },
+      { id: 'billet', name: 'Billet d\'invitation', icon: FileText, sizes: ['standard', 'format long'] }
+    ]
+  },
+  signalisation: {
+    name: 'Signalisation',
+    items: [
+      { id: 'banderole', name: 'Banderole', icon: Flag, sizes: ['2x1m', '3x1m', '4x2m', '5x2m', '6x3m', 'personnalisé'], customSize: true },
+      { id: 'panneau', name: 'Panneau publicitaire', icon: SquareStack, sizes: ['A3', 'A2', 'A1', 'A0', '3x4m', 'personnalisé'], customSize: true },
+      { id: 'kakemono', name: 'Kakemono', icon: Flag, sizes: ['80x200cm', '100x200cm', '120x200cm', 'personnalisé'], customSize: true },
+      { id: 'enseigne', name: 'Enseigne', icon: SquareStack, sizes: ['petit', 'moyen', 'grand', 'personnalisé'], customSize: true }
+    ]
+  },
+  objets: {
+    name: 'Objets publicitaires',
+    items: [
+      { id: 'mug', name: 'Mug', icon: Coffee, colors: ['blanc', 'noir', 'rouge', 'bleu'] },
+      { id: 'bouteille', name: 'Bouteille de table', icon: Coffee, colors: ['transparent', 'blanc', 'noir', 'inox'] },
+      { id: 'porte_cle', name: 'Porte-clé', icon: CreditCard, colors: ['métal', 'plastique blanc', 'plastique noir'] },
+      { id: 'etui_phone', name: 'Étui smartphone', icon: CreditCard, colors: ['transparent', 'noir', 'blanc'] }
+    ]
+  },
+  restauration: {
+    name: 'Restauration',
+    items: [
+      { id: 'menu', name: 'Menu de restaurant', icon: FileText, sizes: ['A4', 'A3', 'format carte'] }
+    ]
+  },
+  travail: {
+    name: 'Tenues de travail & EPI',
+    items: [
+      { id: 'combinaison', name: 'Combinaison', icon: Shirt, colors: ['bleu', 'orange', 'vert', 'gris'] },
+      { id: 'gilet', name: 'Gilet', icon: Shirt, colors: ['orange', 'jaune', 'rouge'] },
+      { id: 'casque', name: 'Casque de sécurité', icon: Palette, colors: ['blanc', 'jaune', 'orange', 'rouge'] }
+    ]
+  },
+  pme: {
+    name: 'Pack PME complet',
+    items: [
+      { id: 'pack_pme', name: 'Pack PME (Gilet, Carnet, Stylo, Polo, Chemise, T-shirt, Cachet, Carnet)', icon: SquareStack, colors: ['personnalisé'] }
+    ]
+  }
+};
+
+const MOCKUP_TYPES = Object.values(MOCKUP_CATEGORIES).flatMap(cat => cat.items);
 
 export default function Mockups() {
   const [user, setUser] = useState(null);
@@ -46,6 +111,10 @@ export default function Mockups() {
   const [selectedType, setSelectedType] = useState('tshirt');
   const [selectedColor, setSelectedColor] = useState('blanc');
   const [selectedSize, setSelectedSize] = useState('');
+  const [customSize, setCustomSize] = useState('');
+  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [userPrompt, setUserPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generatedMockups, setGeneratedMockups] = useState([]);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -92,6 +161,47 @@ export default function Mockups() {
     return MOCKUP_TYPES.find(t => t.id === selectedType);
   };
 
+  const getMockupCategory = () => {
+    for (const [key, category] of Object.entries(MOCKUP_CATEGORIES)) {
+      if (category.items.find(item => item.id === selectedType)) {
+        return category;
+      }
+    }
+    return null;
+  };
+
+  const getAiSuggestion = async () => {
+    if (!userPrompt) {
+      toast.error('Veuillez décrire votre vision');
+      return;
+    }
+
+    setLoadingAi(true);
+    try {
+      const mockupType = getCurrentMockupType();
+      const prompt = `En tant qu'expert en design graphique et impression, analysez cette demande client pour un mockup de ${mockupType.name}:
+
+"${userPrompt}"
+
+Fournissez des suggestions détaillées pour optimiser le rendu du mockup:
+1. Style visuel recommandé
+2. Composition et placement du design
+3. Palette de couleurs suggérée
+4. Effets et finitions appropriés
+5. Conseils techniques spécifiques pour ce support
+
+Soyez précis et professionnel.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({ prompt });
+      setAiSuggestion(result);
+      toast.success('Suggestions IA générées');
+    } catch (e) {
+      toast.error('Erreur lors de la génération des suggestions');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
   const generateMockups = async () => {
     if (!uploadedFileUrl) {
       toast.error('Veuillez d\'abord uploader une maquette');
@@ -109,14 +219,19 @@ export default function Mockups() {
       if (mockupType.colors) {
         detailPrompt = `${selectedColor} color`;
       } else if (mockupType.sizes) {
-        detailPrompt = `size ${selectedSize || mockupType.sizes[0]}`;
+        const finalSize = selectedSize === 'personnalisé' ? customSize : (selectedSize || mockupType.sizes[0]);
+        detailPrompt = `size ${finalSize}`;
       }
+
+      // Ajouter les suggestions IA si disponibles
+      const aiContext = aiSuggestion ? `\nDesign guidance: ${aiSuggestion.substring(0, 200)}` : '';
+      const userContext = userPrompt ? `\nClient vision: ${userPrompt}` : '';
 
       // Générer 3 angles différents
       const angles = [
-        { name: 'Vue de face', prompt: `${basePrompt}, ${detailPrompt}, front view, centered, professional studio lighting, high quality, realistic` },
-        { name: 'Vue de côté', prompt: `${basePrompt}, ${detailPrompt}, side view, 45 degree angle, professional studio lighting, high quality, realistic` },
-        { name: 'Vue perspective', prompt: `${basePrompt}, ${detailPrompt}, perspective view, slightly angled, professional studio lighting, high quality, realistic` }
+        { name: 'Vue de face', prompt: `${basePrompt}, ${detailPrompt}, front view, centered, professional studio lighting, high quality, realistic${aiContext}${userContext}` },
+        { name: 'Vue de côté', prompt: `${basePrompt}, ${detailPrompt}, side view, 45 degree angle, professional studio lighting, high quality, realistic${aiContext}${userContext}` },
+        { name: 'Vue perspective', prompt: `${basePrompt}, ${detailPrompt}, perspective view, slightly angled, professional studio lighting, high quality, realistic${aiContext}${userContext}` }
       ];
 
       const mockups = [];
@@ -369,18 +484,25 @@ Libreville, Gabon
                 <SelectTrigger className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  {MOCKUP_TYPES.map(type => {
-                    const Icon = type.icon;
-                    return (
-                      <SelectItem key={type.id} value={type.id}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4" />
-                          {type.name}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
+                <SelectContent className="max-h-96">
+                  {Object.entries(MOCKUP_CATEGORIES).map(([catKey, category]) => (
+                    <div key={catKey}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50">
+                        {category.name}
+                      </div>
+                      {category.items.map(type => {
+                        const Icon = type.icon;
+                        return (
+                          <SelectItem key={type.id} value={type.id}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              {type.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -432,8 +554,52 @@ Libreville, Gabon
                     ))}
                   </SelectContent>
                 </Select>
+                {getCurrentMockupType().customSize && selectedSize === 'personnalisé' && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Ex: 3x2m, 150x80cm"
+                    value={customSize}
+                    onChange={(e) => setCustomSize(e.target.value)}
+                  />
+                )}
               </div>
             )}
+
+            {/* Assistant IA */}
+            <div className="border-t pt-4 mt-4">
+              <Label>Assistant IA pour optimiser le rendu</Label>
+              <Textarea
+                className="mt-2"
+                placeholder="Décrivez votre vision du mockup (style, ambiance, utilisation...)"
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                rows={3}
+              />
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={getAiSuggestion}
+                disabled={loadingAi || !userPrompt}
+              >
+                {loadingAi ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyse en cours...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Obtenir des suggestions IA
+                  </>
+                )}
+              </Button>
+              {aiSuggestion && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs font-medium text-blue-900 mb-1">Suggestions IA:</p>
+                  <p className="text-xs text-blue-800 whitespace-pre-wrap">{aiSuggestion}</p>
+                </div>
+              )}
+            </div>
 
             {/* Generate Button */}
             <Button 

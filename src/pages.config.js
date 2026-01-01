@@ -10,12 +10,12 @@ import DevisFactures from './pages/DevisFactures';
 import Evenements from './pages/Evenements';
 import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
+import Mockups from './pages/Mockups';
 import Parametres from './pages/Parametres';
 import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Mockups from './pages/Mockups';
 import __Layout from './Layout.jsx';
 
 
@@ -32,12 +32,12 @@ export const PAGES = {
     "Evenements": Evenements,
     "Finances": Finances,
     "Messagerie": Messagerie,
+    "Mockups": Mockups,
     "Parametres": Parametres,
     "Projets": Projets,
     "Prospection": Prospection,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Mockups": Mockups,
 }
 
 export const pagesConfig = {
