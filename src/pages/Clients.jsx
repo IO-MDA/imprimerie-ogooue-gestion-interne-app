@@ -29,6 +29,7 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [user, setUser] = useState(null);
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -45,10 +46,16 @@ export default function Clients() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const data = await base44.entities.Client.list();
+    const [data, userData] = await Promise.all([
+      base44.entities.Client.list(),
+      base44.auth.me()
+    ]);
     setClients(data);
+    setUser(userData);
     setIsLoading(false);
   };
+  
+  const isAdmin = user?.role === 'admin';
 
   const resetForm = () => {
     setFormData({
@@ -123,13 +130,15 @@ export default function Clients() {
           <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
           <p className="text-slate-500">Gérez votre base de clients</p>
         </div>
-        <Button 
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau client
-        </Button>
+        {isAdmin && (
+          <Button 
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau client
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -232,14 +241,16 @@ export default function Clients() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)} className="text-rose-500">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)} className="text-rose-500">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2 text-sm">

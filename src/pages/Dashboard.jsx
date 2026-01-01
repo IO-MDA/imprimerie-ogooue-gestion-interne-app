@@ -19,6 +19,7 @@ import {
 import StatCard from '@/components/dashboard/StatCard';
 import ServiceChart from '@/components/dashboard/ServiceChart';
 import RevenueChart from '@/components/dashboard/RevenueChart';
+import RoleProtection from '@/components/auth/RoleProtection';
 import moment from 'moment';
 
 export default function Dashboard() {
@@ -145,6 +146,7 @@ export default function Dashboard() {
   }
 
   return (
+    <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-8">
       {/* Header */}
       <div>
@@ -382,6 +384,7 @@ export default function Dashboard() {
         </Card>
       </div>
     </div>
+    </RoleProtection>
     </RoleProtection>
   );
 }
