@@ -63,8 +63,9 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
 
       // Contact info
       pdf.setFontSize(10);
-      pdf.text('Tel: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, 120, { align: 'center' });
-      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 128, { align: 'center' });
+      pdf.text('Moanda - Carrefour Fina en face de FINAM', pageWidth / 2, 115, { align: 'center' });
+      pdf.text('Tel: +241 060 44 46 34', pageWidth / 2, 122, { align: 'center' });
+      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 129, { align: 'center' });
 
       // Group products by category
       const produitsParCategorie = {};
@@ -124,17 +125,35 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setLineWidth(0.5);
           pdf.rect(15, yPos - 5, pageWidth - 30, 50);
           
-          // Product image placeholder if photo exists
-          if (produit.photos && produit.photos.length > 0) {
+          // Product image if available
+          if (produit.photos && produit.photos.length > 0 && produit.photos[0]) {
             try {
-              // Note: In production, you'd load and add the actual image
+              const photoUrl = produit.photos[0];
+              if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'))) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = photoUrl;
+                await new Promise((resolve, reject) => {
+                  img.onload = () => resolve();
+                  img.onerror = () => reject();
+                  setTimeout(() => reject(), 5000);
+                });
+                pdf.addImage(img, 'JPEG', 20, yPos, 30, 30);
+              } else {
+                // Placeholder si pas d'URL valide
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(20, yPos, 30, 30, 'F');
+                pdf.setFontSize(8);
+                pdf.setTextColor(150, 150, 150);
+                pdf.text('Pas d\'image', 35, yPos + 16, { align: 'center' });
+              }
+            } catch (e) {
+              // Placeholder en cas d'erreur de chargement
               pdf.setFillColor(240, 240, 240);
               pdf.rect(20, yPos, 30, 30, 'F');
               pdf.setFontSize(8);
               pdf.setTextColor(150, 150, 150);
-              pdf.text('IMAGE', 35, yPos + 16, { align: 'center' });
-            } catch (e) {
-              console.error('Error adding image:', e);
+              pdf.text('Pas d\'image', 35, yPos + 16, { align: 'center' });
             }
           }
           

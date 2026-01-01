@@ -33,6 +33,9 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
     prix_a_partir_de: false,
     delai_estime: '',
     options_personnalisables: [],
+    stock_actuel: 0,
+    stock_minimum: 5,
+    unite: 'unité',
     actif: true,
     visible_clients: true,
     ordre: 0,
@@ -306,6 +309,42 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Gestion du stock */}
+      <div className="space-y-4">
+        <h3 className="font-semibold text-slate-900">Gestion du stock</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div>
+            <Label>Stock actuel</Label>
+            <Input
+              type="number"
+              min="0"
+              value={formData.stock_actuel || 0}
+              onChange={(e) => handleChange('stock_actuel', parseFloat(e.target.value) || 0)}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <Label>Stock minimum (alerte)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={formData.stock_minimum || 5}
+              onChange={(e) => handleChange('stock_minimum', parseFloat(e.target.value) || 5)}
+              placeholder="5"
+            />
+          </div>
+          <div>
+            <Label>Unité de mesure</Label>
+            <Input
+              value={formData.unite || 'unité'}
+              onChange={(e) => handleChange('unite', e.target.value)}
+              placeholder="unité, lot, m², ml..."
+            />
+          </div>
+        </div>
       </div>
 
       {/* Visibilité */}

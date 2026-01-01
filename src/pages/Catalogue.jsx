@@ -18,9 +18,7 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
-  Filter,
-  AlertTriangle,
-  Package
+  Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProduitCatalogueForm from '@/components/catalogue/ProduitCatalogueForm';
@@ -46,7 +44,6 @@ export default function Catalogue() {
   const [selectedProduits, setSelectedProduits] = useState([]);
   const [showGenerator, setShowGenerator] = useState(false);
   const [user, setUser] = useState(null);
-  const [showStockAlert, setShowStockAlert] = useState(false);
   
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -145,11 +142,6 @@ export default function Catalogue() {
     return true;
   });
 
-  // Stock alerts
-  const lowStockProducts = produits.filter(p => 
-    p.gestion_stock && p.stock_actuel <= p.stock_minimum
-  );
-
   // Group by category
   const produitsParCategorie = {};
   filteredProduits.forEach(p => {
@@ -164,10 +156,7 @@ export default function Catalogue() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Package className="w-7 h-7 text-blue-600" />
-            Catalogue Produits
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Catalogue Produits</h1>
           <p className="text-slate-500">Gérez vos produits et générez des catalogues PDF</p>
         </div>
         <div className="flex gap-2">
@@ -185,28 +174,6 @@ export default function Catalogue() {
           </Button>
         </div>
       </div>
-
-      {/* Stock Alert */}
-      {lowStockProducts.length > 0 && (
-        <Card className="border-0 shadow-lg shadow-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-amber-900">Alerte stock bas</p>
-                <p className="text-sm text-amber-700">
-                  {lowStockProducts.length} produit{lowStockProducts.length > 1 ? 's' : ''} nécessite{lowStockProducts.length > 1 ? 'nt' : ''} un réapprovisionnement
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setShowStockAlert(true)}>
-                Voir détails
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -367,14 +334,7 @@ export default function Catalogue() {
                           )}
                         </div>
 
-                        <div className="flex gap-2 flex-wrap">
-                          <Badge className="bg-blue-100 text-blue-700">{produit.categorie}</Badge>
-                          {produit.gestion_stock && (
-                            <Badge className={produit.stock_actuel <= produit.stock_minimum ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}>
-                              Stock: {produit.stock_actuel || 0}
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge className="bg-blue-100 text-blue-700">{produit.categorie}</Badge>
 
                         <p className="text-sm text-slate-600 line-clamp-2">
                           {produit.description_courte}
@@ -419,6 +379,24 @@ export default function Catalogue() {
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
+
+                        {/* Stock Badge */}
+                        {(produit.stock_actuel !== undefined && produit.stock_actuel !== null) && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-slate-500">Stock</span>
+                              <Badge className={
+                                produit.stock_actuel <= (produit.stock_minimum || 5) 
+                                  ? 'bg-rose-100 text-rose-700' 
+                                  : produit.stock_actuel <= (produit.stock_minimum || 5) * 2
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-emerald-100 text-emerald-700'
+                              }>
+                                {produit.stock_actuel} {produit.unite || 'unité'}(s)
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -456,37 +434,6 @@ export default function Catalogue() {
             selectedProduits={selectedProduits}
             onClose={() => setShowGenerator(false)}
           />
-        </DialogContent>
-      </Dialog>
-
-      {/* Stock Alert Dialog */}
-      <Dialog open={showStockAlert} onOpenChange={setShowStockAlert}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              Alertes Stock Bas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {lowStockProducts.map(produit => (
-              <Card key={produit.id} className="border border-amber-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900">{produit.nom}</p>
-                      <p className="text-sm text-slate-500">{produit.categorie}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-slate-500">Stock actuel</p>
-                      <p className="text-2xl font-bold text-amber-600">{produit.stock_actuel || 0}</p>
-                      <p className="text-xs text-slate-400">Min: {produit.stock_minimum || 0}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </DialogContent>
       </Dialog>
     </div>
