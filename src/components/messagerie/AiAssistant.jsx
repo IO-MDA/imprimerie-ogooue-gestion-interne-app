@@ -12,9 +12,13 @@ export default function AiAssistant({ conversation, messages, onUseSuggestion })
   const [copiedIndex, setCopiedIndex] = useState(null);
 
   const generateSuggestions = async () => {
+    if (!conversation || !messages || messages.length === 0) {
+      toast.error('Pas assez de contexte pour générer des suggestions');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Simuler l'analyse IA
       const contextPrompt = `Tu es un assistant IA pour l'Imprimerie Ogooué au Gabon.
 
 Client: ${conversation.client_nom}
@@ -54,8 +58,8 @@ Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenan
       setSuggestions(result.suggestions || []);
       toast.success('Suggestions générées');
     } catch (e) {
-      toast.error('Erreur lors de la génération');
-      console.error(e);
+      toast.error('Erreur lors de la génération. Réessayez.');
+      console.error('AI generation error:', e);
     } finally {
       setLoading(false);
     }
