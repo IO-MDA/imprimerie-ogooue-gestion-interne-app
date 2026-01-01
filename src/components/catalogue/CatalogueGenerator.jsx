@@ -63,9 +63,8 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
 
       // Contact info
       pdf.setFontSize(10);
-      pdf.text('Moanda - Carrefour Fina en face de FINAM', pageWidth / 2, 115, { align: 'center' });
-      pdf.text('Tel: +241 060 44 46 34', pageWidth / 2, 122, { align: 'center' });
-      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 129, { align: 'center' });
+      pdf.text('Tel: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, 120, { align: 'center' });
+      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 128, { align: 'center' });
 
       // Group products by category
       const produitsParCategorie = {};
@@ -125,35 +124,21 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setLineWidth(0.5);
           pdf.rect(15, yPos - 5, pageWidth - 30, 50);
           
-          // Product image if available
+          // Product image with improved error handling
           if (produit.photos && produit.photos.length > 0 && produit.photos[0]) {
             try {
-              const photoUrl = produit.photos[0];
-              if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'))) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = photoUrl;
-                await new Promise((resolve, reject) => {
-                  img.onload = () => resolve();
-                  img.onerror = () => reject();
-                  setTimeout(() => reject(), 5000);
-                });
-                pdf.addImage(img, 'JPEG', 20, yPos, 30, 30);
-              } else {
-                // Placeholder si pas d'URL valide
+              const imageUrl = produit.photos[0];
+              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                // Placeholder box for image
                 pdf.setFillColor(240, 240, 240);
                 pdf.rect(20, yPos, 30, 30, 'F');
                 pdf.setFontSize(8);
                 pdf.setTextColor(150, 150, 150);
-                pdf.text('Pas d\'image', 35, yPos + 16, { align: 'center' });
+                pdf.text('PHOTO', 35, yPos + 16, { align: 'center' });
               }
             } catch (e) {
-              // Placeholder en cas d'erreur de chargement
-              pdf.setFillColor(240, 240, 240);
-              pdf.rect(20, yPos, 30, 30, 'F');
-              pdf.setFontSize(8);
-              pdf.setTextColor(150, 150, 150);
-              pdf.text('Pas d\'image', 35, yPos + 16, { align: 'center' });
+              // Silently handle image errors
+              console.log('Image non chargée pour:', produit.nom);
             }
           }
           
@@ -191,7 +176,8 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       // Footer on last page
       pdf.setFontSize(10);
       pdf.setTextColor(100, 100, 100);
-      pdf.text('Imprimerie Ogooué - Moanda, Gabon', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      pdf.text('Imprimerie Ogooué - Moanda, Gabon', pageWidth / 2, pageHeight - 15, { align: 'center' });
+      pdf.text('Carrefour Fina en face de FINAM', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
       // Save PDF
       const fileName = `Catalogue_${generationType === 'selection' ? 'Selection' : 
