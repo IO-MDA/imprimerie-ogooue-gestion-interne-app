@@ -66,32 +66,33 @@ export default function Layout({ children, currentPageName }) {
 
   // Navigation selon le rôle
   const allNavigation = [
-    { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
-    { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'user'] },
-    { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'user'] },
-    { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'user'] },
-    { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'user'] },
-    { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'user'] },
-    { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'user'] },
-    { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'user'] },
-    { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin'] },
-    { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin'] },
-    { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin'] },
-    { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin'] },
-    { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin'] },
-    { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
-    { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
-    { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin'] },
-    { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin'] },
-    { 
-      name: 'Demandes modification', 
-      href: 'DemandesModification', 
-      icon: FileCheck,
-      badge: pendingRequests,
-      roles: ['admin']
-    },
-    { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
-  ];
+          { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+          { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'user'] },
+          { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'user'] },
+          { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'user'] },
+          { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'user'] },
+          { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'user'] },
+          { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'user'] },
+          { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'user'] },
+          { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'user'] },
+          { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin'] },
+          { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin'] },
+          { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin'] },
+          { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin'] },
+          { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin'] },
+          { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
+          { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
+          { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin'] },
+          { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin'] },
+          { 
+            name: 'Demandes modification', 
+            href: 'DemandesModification', 
+            icon: FileCheck,
+            badge: pendingRequests,
+            roles: ['admin']
+          },
+          { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
+        ];
 
   // Filtrer selon le rôle
   const navigation = allNavigation.filter(item => 
@@ -133,7 +134,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900 tracking-tight">Imprimerie</h1>
-                <p className="text-xs text-slate-500 -mt-0.5">Ogooué</p>
+                <p className="text-xs text-slate-500 -mt-0.5">OGOOUE</p>
               </div>
             </Link>
             <button 

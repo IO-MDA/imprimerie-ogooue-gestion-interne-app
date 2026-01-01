@@ -396,7 +396,7 @@ export default function Parametres() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Nom de l'entreprise</Label>
-                  <Input value="Imprimerie Ogooué" disabled />
+                  <Input value="Imprimerie OGOOUE" disabled />
                 </div>
                 <div>
                   <Label>Pays</Label>
