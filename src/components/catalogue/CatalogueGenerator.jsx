@@ -41,22 +41,22 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       const pageHeight = pdf.internal.pageSize.getHeight();
       let yPos = 20;
 
-      // Cover page
+      // Cover page with logo
       pdf.setFillColor(0, 120, 215);
       pdf.rect(0, 0, pageWidth, 80, 'F');
-
+      
       // Add logo
       const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
       try {
-        pdf.addImage(logoUrl, 'PNG', 15, 10, 30, 30);
+        pdf.addImage(logoUrl, 'PNG', pageWidth / 2 - 15, 15, 30, 30);
       } catch (e) {
-        console.log('Logo non chargé');
+        console.log('Logo loading error, continuing without logo');
       }
-
+      
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(32);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('IMPRIMERIE OGOOUÉ', pageWidth / 2, 40, { align: 'center' });
+      pdf.text('IMPRIMERIE OGOOUÉ', pageWidth / 2, 55, { align: 'center' });
       
       pdf.setFontSize(16);
       pdf.setFont('helvetica', 'normal');
