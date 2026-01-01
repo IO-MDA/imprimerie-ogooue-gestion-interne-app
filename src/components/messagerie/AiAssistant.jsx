@@ -1,160 +1,141 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, Loader2, Copy, CheckCircle } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function AiAssistant({ conversation, messages, onUseSuggestion }) {
-  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [copiedIndex, setCopiedIndex] = useState(null);
+  const [suggestion, setSuggestion] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  const generateSuggestions = async () => {
+  const generateSuggestion = async () => {
     setLoading(true);
     try {
-      // Simuler l'analyse IA
-      const contextPrompt = `Tu es un assistant IA pour l'Imprimerie Ogooué au Gabon.
+      const context = messages.slice(-5).map(m => 
+        `${m.est_operateur ? 'Agent' : 'Client'}: ${m.contenu}`
+      ).join('\n');
+
+      const prompt = `Tu es un assistant IA pour Imprimerie Ogooué à Libreville, Gabon.
+
+Contexte de la conversation:
+${context}
 
 Client: ${conversation.client_nom}
 Plateforme: ${conversation.plateforme}
-Intention détectée: ${conversation.intention_detectee || 'non définie'}
+${conversation.intention_detectee ? `Intention détectée: ${conversation.intention_detectee}` : ''}
 
-Derniers messages:
-${messages.slice(-5).map(m => `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`).join('\n')}
+Mission:
+1. Analyse le contexte et identifie l'intention du client (devis, commande, réclamation, suivi, information)
+2. Propose une réponse professionnelle, courtoise et adaptée aux services d'imprimerie
+3. Suggère des questions de clarification si nécessaire (quantité, format, délais, etc.)
+4. Reste bref et efficace
 
-Génère 3 réponses professionnelles et adaptées pour ce contexte d'imprimerie (flyers, t-shirts, banderoles, mugs, etc.). Chaque réponse doit être courte, professionnelle et inclure:
-- Une salutation appropriée
-- Une réponse au besoin du client
-- Une proposition de valeur
-- Un appel à l'action
+Notre expertise: impression textile (t-shirts, polos, casquettes), signalisation (banderoles, panneaux), papeterie (cartes de visite, flyers), objets publicitaires (mugs, calendriers), et services d'impression générale.
 
-Format: Retourne uniquement un objet JSON avec un tableau "suggestions" contenant 3 objets {type, text}`;
+Fournis une réponse prête à envoyer.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: contextPrompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  type: { type: "string" },
-                  text: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      setSuggestions(result.suggestions || []);
-      toast.success('Suggestions générées');
+      const result = await base44.integrations.Core.InvokeLLM({ prompt });
+      
+      setSuggestion(result);
+      toast.success('Suggestion générée');
     } catch (e) {
       toast.error('Erreur lors de la génération');
-      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const copySuggestion = (text, index) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-    toast.success('Copié');
+  const handleCopy = () => {
+    navigator.clipboard.writeText(suggestion);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success('Copié dans le presse-papiers');
+  };
+
+  const handleUse = () => {
+    onUseSuggestion(suggestion);
+    toast.success('Suggestion ajoutée au message');
   };
 
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
+    <Card className="border-0 shadow-lg shadow-purple-200/50 bg-gradient-to-br from-purple-50 to-pink-50">
+      <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
           Assistant IA Imprimerie
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        {!conversation ? (
-          <div className="text-center py-8 text-slate-500">
-            <p>Sélectionnez une conversation</p>
-          </div>
+      <CardContent className="space-y-3">
+        {!suggestion ? (
+          <Button
+            onClick={generateSuggestion}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Analyse en cours...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Générer une suggestion
+              </>
+            )}
+          </Button>
         ) : (
           <>
-            {/* Info */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-medium text-blue-900 mb-1">Contexte détecté:</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge className="bg-blue-600">
-                  {conversation.intention_detectee || 'Non défini'}
-                </Badge>
-                {conversation.tags?.map(tag => (
-                  <Badge key={tag} variant="outline">{tag}</Badge>
-                ))}
-              </div>
+            <div className="bg-white p-4 rounded-lg border border-purple-200">
+              <p className="text-sm text-slate-700 whitespace-pre-wrap">{suggestion}</p>
             </div>
-
-            {/* Generate Button */}
-            <Button
-              onClick={generateSuggestions}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyse en cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Générer des suggestions
-                </>
-              )}
-            </Button>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-slate-700">Réponses suggérées:</p>
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-slate-50 border rounded-lg hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <Badge variant="outline" className="text-xs">
-                        {suggestion.type}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copySuggestion(suggestion.text, index)}
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {suggestion.text}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2"
-                      onClick={() => onUseSuggestion(suggestion.text)}
-                    >
-                      Utiliser cette réponse
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+                className="flex-1"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                    Copié
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copier
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleUse}
+                className="flex-1 bg-purple-600"
+              >
+                Utiliser
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSuggestion(null)}
+              >
+                Nouvelle
+              </Button>
+            </div>
           </>
+        )}
+
+        {conversation.intention_detectee && (
+          <div className="pt-3 border-t border-purple-200">
+            <p className="text-xs text-purple-700 font-medium mb-1">Intention détectée:</p>
+            <Badge className="bg-purple-100 text-purple-800 capitalize">
+              {conversation.intention_detectee}
+            </Badge>
+          </div>
         )}
       </CardContent>
     </Card>
