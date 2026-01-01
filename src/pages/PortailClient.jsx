@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { 
   ShoppingBag, 
   FileText, 
@@ -13,7 +14,9 @@ import {
   Plus,
   Package,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
@@ -31,6 +34,8 @@ export default function PortailClient() {
   const [showDemandeForm, setShowDemandeForm] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
+  const [produitsCatalogue, setProduitsCatalogue] = useState([]);
+  const [catalogueSearch, setCatalogueSearch] = useState('');
 
   useEffect(() => {
     loadData();
@@ -49,17 +54,19 @@ export default function PortailClient() {
 
       if (clientData) {
         // Load all related data
-        const [devisData, facturesData, projetsData, conversationsData] = await Promise.all([
+        const [devisData, facturesData, projetsData, conversationsData, catalogueData] = await Promise.all([
           base44.entities.Devis.filter({ client_id: clientData.id }),
           base44.entities.Facture.filter({ client_id: clientData.id }),
           base44.entities.Projet.filter({ client_id: clientData.id }),
-          base44.entities.ConversationClient.filter({ client_id: clientData.id })
+          base44.entities.ConversationClient.filter({ client_id: clientData.id }),
+          base44.entities.ProduitCatalogue.filter({ actif: true, visible_clients: true })
         ]);
 
         setDevis(devisData);
         setFactures(facturesData);
         setProjets(projetsData);
         setConversations(conversationsData);
+        setProduitsCatalogue(catalogueData);
       }
     } catch (e) {
       console.error('Error loading data:', e);
@@ -123,6 +130,15 @@ export default function PortailClient() {
   const totalCommandes = devis.filter(d => d.statut === 'approuve').length;
   const facturesImpayees = factures.filter(f => f.statut !== 'payee').length;
   const projetsActifs = projets.filter(p => p.statut === 'en_cours').length;
+
+  // Filter catalogue
+  const filteredCatalogue = produitsCatalogue.filter(p => {
+    if (!catalogueSearch) return true;
+    const search = catalogueSearch.toLowerCase();
+    return p.nom?.toLowerCase().includes(search) ||
+           p.description_courte?.toLowerCase().includes(search) ||
+           p.categorie?.toLowerCase().includes(search);
+  });
 
   return (
     <div className="space-y-6">
@@ -193,13 +209,95 @@ export default function PortailClient() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="devis" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="catalogue" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           <TabsTrigger value="devis">Devis</TabsTrigger>
           <TabsTrigger value="factures">Factures</TabsTrigger>
           <TabsTrigger value="projets">Projets</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
+
+        {/* Catalogue Tab */}
+        <TabsContent value="catalogue" className="space-y-4">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Rechercher un produit..."
+                  value={catalogueSearch}
+                  onChange={(e) => setCatalogueSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {filteredCatalogue.length === 0 ? (
+            <Card className="border-0 shadow-lg">
+              <CardContent className="py-16 text-center">
+                <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">Aucun produit trouvé</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCatalogue.map(produit => (
+                <Card key={produit.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardContent className="p-4">
+                    {produit.photos && produit.photos.length > 0 ? (
+                      <img
+                        src={produit.photos[0]}
+                        alt={produit.nom}
+                        className="w-full h-40 object-cover rounded-lg mb-3"
+                      />
+                    ) : (
+                      <div className="w-full h-40 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-slate-300" />
+                      </div>
+                    )}
+                    
+                    <Badge className="mb-2 bg-blue-100 text-blue-700">
+                      {produit.categorie}
+                    </Badge>
+                    
+                    <h3 className="font-semibold text-slate-900 mb-2">{produit.nom}</h3>
+                    
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                      {produit.description_courte}
+                    </p>
+                    
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <p className="text-lg font-bold text-blue-600">
+                        {produit.prix_unitaire.toLocaleString()} FCFA
+                      </p>
+                      {produit.prix_a_partir_de && (
+                        <span className="text-xs text-slate-500">à partir de</span>
+                      )}
+                    </div>
+                    
+                    {produit.delai_estime && (
+                      <p className="text-xs text-slate-500 mb-3">
+                        ⏱ Délai: {produit.delai_estime}
+                      </p>
+                    )}
+                    
+                    <Button
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      onClick={() => {
+                        setShowDemandeForm(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Demander un devis
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Devis Tab */}
         <TabsContent value="devis" className="space-y-4">

@@ -12,12 +12,12 @@ import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
 import Mockups from './pages/Mockups';
 import Parametres from './pages/Parametres';
+import PortailClient from './pages/PortailClient';
 import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
+import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Rapports from './pages/Rapports';
-import PortailClient from './pages/PortailClient';
 import __Layout from './Layout.jsx';
 
 
@@ -36,12 +36,12 @@ export const PAGES = {
     "Messagerie": Messagerie,
     "Mockups": Mockups,
     "Parametres": Parametres,
+    "PortailClient": PortailClient,
     "Projets": Projets,
     "Prospection": Prospection,
+    "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Rapports": Rapports,
-    "PortailClient": PortailClient,
 }
 
 export const pagesConfig = {
