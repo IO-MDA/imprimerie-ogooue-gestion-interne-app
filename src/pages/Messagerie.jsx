@@ -2,316 +2,370 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, 
   Search, 
-  MessageSquare,
-  Send,
-  Inbox,
-  Mail,
-  MailOpen,
-  Clock,
-  User,
-  ArrowLeft
+  MessageCircle, 
+  Facebook, 
+  Instagram, 
+  Filter,
+  Settings,
+  Plus,
+  Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import ConversationList from '@/components/messagerie/ConversationList';
+import ConversationView from '@/components/messagerie/ConversationView';
+import AiAssistant from '@/components/messagerie/AiAssistant';
+
+const PLATFORM_FILTERS = [
+  { id: 'all', label: 'Tous', icon: Filter },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'text-green-600' },
+  { id: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600' },
+  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600' },
+  { id: 'interne', label: 'Interne', icon: Mail, color: 'text-slate-600' }
+];
 
 export default function Messagerie() {
+  const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showCompose, setShowCompose] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Filters
+  const [platformFilter, setPlatformFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [view, setView] = useState('inbox');
-
-  const [composeData, setComposeData] = useState({
-    sujet: '',
-    contenu: '',
-    destinataire: 'admin'
-  });
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   useEffect(() => {
     loadData();
+    // Simuler le temps réel avec un refresh toutes les 10s
+    const interval = setInterval(loadData, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      loadMessages(selectedConversation.id);
+    }
+  }, [selectedConversation]);
 
   const loadData = async () => {
     setIsLoading(true);
-    const [messagesData, userData] = await Promise.all([
-      base44.entities.Message.list('-created_date'),
+    const [conversationsData, templatesData, userData] = await Promise.all([
+      base44.entities.ConversationClient.list('-dernier_message_date'),
+      base44.entities.TemplateReponse.filter({ actif: true }),
       base44.auth.me()
     ]);
-    setMessages(messagesData);
+    setConversations(conversationsData);
+    setTemplates(templatesData);
     setUser(userData);
     setIsLoading(false);
   };
 
-  const isAdmin = user?.role === 'admin';
-
-  const myMessages = messages.filter(m => {
-    if (view === 'inbox') {
-      // Messages reçus
-      if (isAdmin) {
-        return m.destinataire === 'admin' || m.destinataire === user?.email;
-      }
-      return m.destinataire === user?.email;
-    } else {
-      // Messages envoyés
-      return m.expediteur === user?.email;
-    }
-  });
-
-  const filteredMessages = myMessages.filter(m => {
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return m.sujet?.toLowerCase().includes(search) ||
-             m.contenu?.toLowerCase().includes(search) ||
-             m.expediteur_nom?.toLowerCase().includes(search);
-    }
-    return true;
-  });
-
-  const unreadCount = myMessages.filter(m => !m.lu && view === 'inbox').length;
-
-  const handleSend = async () => {
-    if (!composeData.sujet || !composeData.contenu) {
-      toast.error('Veuillez remplir le sujet et le message');
-      return;
-    }
-
-    await base44.entities.Message.create({
-      ...composeData,
-      expediteur: user?.email,
-      expediteur_nom: user?.full_name || user?.email,
-      lu: false
-    });
-    
-    toast.success('Message envoyé');
-    setShowCompose(false);
-    setComposeData({ sujet: '', contenu: '', destinataire: 'admin' });
-    loadData();
+  const loadMessages = async (conversationId) => {
+    const messagesData = await base44.entities.MessageCanal.filter(
+      { conversation_id: conversationId },
+      'created_date'
+    );
+    setMessages(messagesData);
   };
 
-  const handleRead = async (message) => {
-    setSelectedMessage(message);
-    if (!message.lu && message.destinataire === user?.email || (isAdmin && message.destinataire === 'admin')) {
-      await base44.entities.Message.update(message.id, { lu: true });
+  const handleSelectConversation = async (conversation) => {
+    setSelectedConversation(conversation);
+    
+    // Marquer comme lu
+    if (conversation.non_lu) {
+      await base44.entities.ConversationClient.update(conversation.id, { non_lu: false });
       loadData();
     }
   };
 
-  const handleReply = async (originalMessage) => {
-    setComposeData({
-      sujet: `RE: ${originalMessage.sujet}`,
-      contenu: '',
-      destinataire: originalMessage.expediteur,
-      conversation_id: originalMessage.conversation_id || originalMessage.id
+  const handleSendMessage = async (text) => {
+    if (!selectedConversation || !text.trim()) return;
+
+    const messageData = {
+      conversation_id: selectedConversation.id,
+      plateforme: selectedConversation.plateforme,
+      expediteur: user.email,
+      expediteur_nom: user.full_name || user.email,
+      destinataire: selectedConversation.client_nom,
+      contenu: text,
+      est_operateur: true,
+      lu: true
+    };
+
+    await base44.entities.MessageCanal.create(messageData);
+
+    // Update conversation
+    await base44.entities.ConversationClient.update(selectedConversation.id, {
+      dernier_message: text,
+      dernier_message_date: new Date().toISOString(),
+      statut: 'en_cours'
     });
-    setSelectedMessage(null);
-    setShowCompose(true);
+
+    loadMessages(selectedConversation.id);
+    loadData();
+    toast.success('Message envoyé');
   };
+
+  const handleRequestAi = async () => {
+    if (!selectedConversation) return null;
+
+    const contextMessages = messages.slice(-5).map(m => 
+      `${m.est_operateur ? 'Nous' : 'Client'}: ${m.contenu}`
+    ).join('\n');
+
+    const prompt = `Tu es un assistant pour l'Imprimerie Ogooué.
+
+Contexte conversation:
+${contextMessages}
+
+Génère UNE réponse professionnelle et adaptée pour ce client. Court, précis, avec appel à l'action.`;
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({ prompt });
+      return result;
+    } catch (e) {
+      toast.error('Erreur IA');
+      return null;
+    }
+  };
+
+  const handleUseTemplate = (template) => {
+    // Remplacer les variables
+    let content = template.contenu;
+    if (selectedConversation) {
+      content = content.replace('{client_nom}', selectedConversation.client_nom);
+    }
+    return content;
+  };
+
+  const initializeData = async () => {
+    // Créer des templates par défaut
+    const defaultTemplates = [
+      {
+        titre: 'Bienvenue',
+        categorie: 'bienvenue',
+        contenu: 'Bonjour {client_nom},\n\nMerci de nous avoir contactés ! Nous sommes l\'Imprimerie Ogooué, spécialiste de l\'impression à Libreville.\n\nComment pouvons-nous vous aider ?',
+        actif: true
+      },
+      {
+        titre: 'Demande de devis',
+        categorie: 'devis',
+        contenu: 'Bonjour {client_nom},\n\nPour établir votre devis, j\'aurais besoin de quelques informations :\n- Type de support (flyers, t-shirts, banderoles, etc.)\n- Quantité souhaitée\n- Format/taille\n- Délai souhaité\n\nÀ très vite !',
+        actif: true
+      },
+      {
+        titre: 'Confirmation commande',
+        categorie: 'commande',
+        contenu: 'Parfait {client_nom} !\n\nVotre commande est bien notée. Nous démarrons la production et vous tenons informé(e) de l\'avancement.\n\nDélai estimé : 3-5 jours ouvrés.\n\nMerci de votre confiance !',
+        actif: true
+      },
+      {
+        titre: 'Demande visuel',
+        categorie: 'information',
+        contenu: 'Bonjour {client_nom},\n\nPour avancer sur votre projet, pourriez-vous nous envoyer :\n- Votre logo ou visuel\n- Vos préférences de couleurs\n- Texte à intégrer\n\nFormat accepté : PNG, JPG, PDF, AI',
+        actif: true
+      }
+    ];
+
+    for (const template of defaultTemplates) {
+      const exists = templates.find(t => t.titre === template.titre);
+      if (!exists) {
+        await base44.entities.TemplateReponse.create(template);
+      }
+    }
+
+    // Créer une conversation de démonstration
+    const demoConvExists = conversations.find(c => c.client_nom === 'Client Démo');
+    if (!demoConvExists) {
+      const demoConv = await base44.entities.ConversationClient.create({
+        client_nom: 'Client Démo',
+        plateforme: 'whatsapp',
+        statut: 'nouveau',
+        dernier_message: 'Bonjour, je souhaite des informations sur vos t-shirts personnalisés',
+        dernier_message_date: new Date().toISOString(),
+        non_lu: true,
+        intention_detectee: 'devis'
+      });
+
+      await base44.entities.MessageCanal.create({
+        conversation_id: demoConv.id,
+        plateforme: 'whatsapp',
+        expediteur: 'demo_client',
+        expediteur_nom: 'Client Démo',
+        contenu: 'Bonjour, je souhaite des informations sur vos t-shirts personnalisés',
+        est_operateur: false
+      });
+    }
+
+    toast.success('Données initialisées');
+    loadData();
+  };
+
+  // Filtering
+  const filteredConversations = conversations.filter(conv => {
+    if (platformFilter !== 'all' && conv.plateforme !== platformFilter) return false;
+    if (statusFilter !== 'all' && conv.statut !== statusFilter) return false;
+    if (showUnreadOnly && !conv.non_lu) return false;
+    if (searchQuery) {
+      const search = searchQuery.toLowerCase();
+      return conv.client_nom?.toLowerCase().includes(search) ||
+             conv.dernier_message?.toLowerCase().includes(search);
+    }
+    return true;
+  });
+
+  const unreadCount = conversations.filter(c => c.non_lu).length;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Messagerie</h1>
-          <p className="text-slate-500">Communiquez avec l'équipe administrative</p>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <MessageCircle className="w-7 h-7 text-blue-600" />
+            Messagerie Omnicanale
+          </h1>
+          <p className="text-slate-500">Centralisez toutes vos conversations clients</p>
         </div>
-        <Button 
-          onClick={() => setShowCompose(true)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau message
-        </Button>
-      </div>
-
-      {/* View Tabs */}
-      <div className="flex gap-2">
-        <Button 
-          variant={view === 'inbox' ? 'default' : 'outline'}
-          onClick={() => setView('inbox')}
-          className={view === 'inbox' ? 'bg-blue-600' : ''}
-        >
-          <Inbox className="w-4 h-4 mr-2" />
-          Boîte de réception
-          {unreadCount > 0 && (
-            <Badge className="ml-2 bg-red-500">{unreadCount}</Badge>
+        <div className="flex gap-2">
+          {conversations.length === 0 && (
+            <Button variant="outline" onClick={initializeData}>
+              <Plus className="w-4 h-4 mr-2" />
+              Initialiser
+            </Button>
           )}
-        </Button>
-        <Button 
-          variant={view === 'sent' ? 'default' : 'outline'}
-          onClick={() => setView('sent')}
-          className={view === 'sent' ? 'bg-blue-600' : ''}
-        >
-          <Send className="w-4 h-4 mr-2" />
-          Envoyés
-        </Button>
+          <Button variant="outline">
+            <Settings className="w-4 h-4 mr-2" />
+            Paramètres
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input 
-          placeholder="Rechercher..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Platform Filters */}
+      <Card className="border-0 shadow-lg shadow-slate-200/50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_FILTERS.map(platform => {
+              const Icon = platform.icon;
+              const isActive = platformFilter === platform.id;
+              const count = platform.id === 'all' 
+                ? conversations.length 
+                : conversations.filter(c => c.plateforme === platform.id).length;
 
-      {/* Messages List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : filteredMessages.length === 0 ? (
-        <Card className="border-0 shadow-lg shadow-slate-200/50">
-          <CardContent className="py-16 text-center">
-            <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">Aucun message</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filteredMessages.map(message => (
-            <Card 
-              key={message.id} 
-              className={`border-0 shadow-lg shadow-slate-200/50 hover:shadow-xl transition-all cursor-pointer ${
-                !message.lu && view === 'inbox' ? 'bg-blue-50/50 border-l-4 border-l-blue-500' : ''
-              }`}
-              onClick={() => handleRead(message)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                    {(view === 'inbox' ? message.expediteur_nom : message.destinataire)?.[0]?.toUpperCase() || 'A'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className={`font-medium truncate ${!message.lu && view === 'inbox' ? 'text-slate-900' : 'text-slate-600'}`}>
-                        {view === 'inbox' ? message.expediteur_nom : (message.destinataire === 'admin' ? 'Administration' : message.destinataire)}
-                      </p>
-                      {!message.lu && view === 'inbox' && (
-                        <Badge className="bg-blue-600 text-xs">Nouveau</Badge>
-                      )}
-                    </div>
-                    <p className={`text-sm truncate ${!message.lu && view === 'inbox' ? 'font-medium text-slate-800' : 'text-slate-600'}`}>
-                      {message.sujet}
-                    </p>
-                    <p className="text-xs text-slate-400 truncate mt-1">{message.contenu}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs text-slate-400">
-                      {moment(message.created_date).format('DD/MM HH:mm')}
-                    </p>
-                    {message.lu && view === 'inbox' ? (
-                      <MailOpen className="w-4 h-4 text-slate-300 mt-1 ml-auto" />
-                    ) : view === 'inbox' ? (
-                      <Mail className="w-4 h-4 text-blue-500 mt-1 ml-auto" />
-                    ) : null}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              return (
+                <Button
+                  key={platform.id}
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPlatformFilter(platform.id)}
+                  className={isActive ? 'bg-blue-600' : ''}
+                >
+                  <Icon className={`w-4 h-4 mr-2 ${platform.color || ''}`} />
+                  {platform.label}
+                  {count > 0 && (
+                    <Badge className="ml-2 bg-slate-200 text-slate-700">{count}</Badge>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Compose Dialog */}
-      <Dialog open={showCompose} onOpenChange={setShowCompose}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nouveau message</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Destinataire</Label>
-              <Input 
-                value={composeData.destinataire === 'admin' ? 'Administration' : composeData.destinataire}
-                disabled={!isAdmin}
-                onChange={(e) => setComposeData(prev => ({ ...prev, destinataire: e.target.value }))}
-              />
-              {!isAdmin && (
-                <p className="text-xs text-slate-500 mt-1">Les messages sont envoyés à l'administration</p>
-              )}
-            </div>
-            <div>
-              <Label>Sujet</Label>
-              <Input 
-                value={composeData.sujet}
-                onChange={(e) => setComposeData(prev => ({ ...prev, sujet: e.target.value }))}
-                placeholder="Objet du message"
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Conversations List */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Search & Filters */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
               />
             </div>
-            <div>
-              <Label>Message</Label>
-              <Textarea 
-                value={composeData.contenu}
-                onChange={(e) => setComposeData(prev => ({ ...prev, contenu: e.target.value }))}
-                placeholder="Votre message..."
-                rows={6}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowCompose(false)}>
-                Annuler
-              </Button>
-              <Button 
-                className="bg-gradient-to-r from-blue-600 to-indigo-600"
-                onClick={handleSend}
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous statuts</SelectItem>
+                  <SelectItem value="nouveau">Nouveau</SelectItem>
+                  <SelectItem value="en_cours">En cours</SelectItem>
+                  <SelectItem value="en_attente">En attente</SelectItem>
+                  <SelectItem value="clos">Clos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant={showUnreadOnly ? 'default' : 'outline'}
+                onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                className={showUnreadOnly ? 'bg-blue-600' : ''}
               >
-                <Send className="w-4 h-4 mr-2" />
-                Envoyer
+                Non lus {unreadCount > 0 && `(${unreadCount})`}
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* View Message Dialog */}
-      <Dialog open={!!selectedMessage} onOpenChange={() => setSelectedMessage(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{selectedMessage?.sujet}</DialogTitle>
-          </DialogHeader>
-          {selectedMessage && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 pb-4 border-b">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                  {selectedMessage.expediteur_nom?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <div>
-                  <p className="font-medium">{selectedMessage.expediteur_nom}</p>
-                  <p className="text-sm text-slate-500">
-                    <Clock className="w-3 h-3 inline mr-1" />
-                    {moment(selectedMessage.created_date).format('DD/MM/YYYY à HH:mm')}
-                  </p>
-                </div>
-              </div>
-              <div className="py-4 whitespace-pre-wrap text-slate-700">
-                {selectedMessage.contenu}
-              </div>
-              {view === 'inbox' && (
-                <div className="flex justify-end pt-4 border-t">
-                  <Button onClick={() => handleReply(selectedMessage)}>
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Répondre
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          {/* List */}
+          <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+            <ConversationList
+              conversations={filteredConversations}
+              selectedConversation={selectedConversation}
+              onSelect={handleSelectConversation}
+            />
+          </div>
+        </div>
+
+        {/* Conversation View */}
+        <div className="lg:col-span-5">
+          <div className="h-[calc(100vh-300px)]">
+            <ConversationView
+              conversation={selectedConversation}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              onRequestAi={handleRequestAi}
+              templates={templates}
+              onUseTemplate={handleUseTemplate}
+            />
+          </div>
+        </div>
+
+        {/* AI Assistant */}
+        <div className="lg:col-span-3">
+          <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <AiAssistant
+              conversation={selectedConversation}
+              messages={messages}
+              onUseSuggestion={(text) => {
+                if (selectedConversation) {
+                  handleSendMessage(text);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
