@@ -58,23 +58,33 @@ export default function Messagerie() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [conversationsData, templatesData, userData] = await Promise.all([
-      base44.entities.ConversationClient.list('-dernier_message_date'),
-      base44.entities.TemplateReponse.filter({ actif: true }),
-      base44.auth.me()
-    ]);
-    setConversations(conversationsData);
-    setTemplates(templatesData);
-    setUser(userData);
-    setIsLoading(false);
+    try {
+      const [conversationsData, templatesData, userData] = await Promise.all([
+        base44.entities.ConversationClient.list('-dernier_message_date').catch(() => []),
+        base44.entities.TemplateReponse.filter({ actif: true }).catch(() => []),
+        base44.auth.me()
+      ]);
+      setConversations(conversationsData);
+      setTemplates(templatesData);
+      setUser(userData);
+    } catch (e) {
+      console.error('Error loading data:', e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadMessages = async (conversationId) => {
-    const messagesData = await base44.entities.MessageCanal.filter(
-      { conversation_id: conversationId },
-      'created_date'
-    );
-    setMessages(messagesData);
+    try {
+      const messagesData = await base44.entities.MessageCanal.filter(
+        { conversation_id: conversationId },
+        'created_date'
+      );
+      setMessages(messagesData);
+    } catch (e) {
+      console.error('Error loading messages:', e);
+      setMessages([]);
+    }
   };
 
   const handleSelectConversation = async (conversation) => {
