@@ -301,21 +301,6 @@ export default function Bilans() {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-rose-600" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Accès Restreint</h2>
-          <p className="text-slate-600">Seuls les administrateurs peuvent accéder aux bilans et analyses.</p>
-        </div>
-        </div>
-        </RoleProtection>
-        );
-        }
-
   return (
     <RoleProtection allowedRoles={['admin']} user={user}>
     <div className="space-y-6">
@@ -652,5 +637,6 @@ export default function Bilans() {
         </CardContent>
       </Card>
     </div>
+    </RoleProtection>
   );
 }

@@ -385,6 +385,5 @@ export default function Dashboard() {
       </div>
     </div>
     </RoleProtection>
-    </RoleProtection>
   );
 }
