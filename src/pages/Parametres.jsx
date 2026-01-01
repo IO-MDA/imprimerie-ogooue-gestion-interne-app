@@ -406,7 +406,7 @@ export default function Parametres() {
                   <Label>Ville</Label>
                   <Input value="Moanda" disabled />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <Label>Adresse</Label>
                   <Input value="Carrefour Fina en face de FINAM" disabled />
                 </div>

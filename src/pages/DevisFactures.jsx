@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import DocumentForm from '@/components/documents/DocumentForm';
 import moment from 'moment';
 import { toast } from 'sonner';
@@ -110,88 +111,99 @@ export default function DevisFactures() {
     loadData();
   };
 
-  const downloadPDF = async (doc, type) => {
-    try {
-      const { jsPDF } = await import('jspdf');
-      const pdf = new jsPDF();
-
-      // En-tête
-      pdf.setFontSize(20);
-      pdf.text(type === 'devis' ? 'DEVIS' : 'FACTURE', 20, 20);
-      
-      pdf.setFontSize(10);
-      pdf.text('Imprimerie Ogooué', 20, 30);
-      pdf.text('Moanda, Gabon', 20, 35);
-      pdf.text('Carrefour Fina en face de FINAM', 20, 40);
-      
-      // Numéro et date
-      pdf.setFontSize(12);
-      pdf.text(`N° ${doc.numero}`, 150, 20);
-      pdf.setFontSize(10);
-      pdf.text(`Date: ${moment(doc.date_emission).format('DD/MM/YYYY')}`, 150, 30);
-      
-      // Client
-      pdf.setFontSize(12);
-      pdf.text('Client:', 20, 55);
-      pdf.setFontSize(10);
-      pdf.text(doc.client_nom, 20, 62);
-      if (doc.client_email) pdf.text(doc.client_email, 20, 67);
-      if (doc.client_telephone) pdf.text(doc.client_telephone, 20, 72);
-      
-      // Tableau des lignes
-      let y = 85;
-      pdf.setFontSize(10);
-      pdf.text('Description', 20, y);
-      pdf.text('Qté', 120, y);
-      pdf.text('Prix U.', 145, y);
-      pdf.text('Total', 175, y);
-      
-      y += 7;
-      pdf.line(20, y, 200, y);
-      y += 5;
-      
-      doc.lignes?.forEach(ligne => {
-        if (y > 270) {
-          pdf.addPage();
-          y = 20;
-        }
-        pdf.text(ligne.description?.substring(0, 40) || '', 20, y);
-        pdf.text(String(ligne.quantite || 0), 120, y);
-        pdf.text(String((ligne.prix_unitaire || 0).toLocaleString()), 145, y);
-        pdf.text(String((ligne.total || 0).toLocaleString()), 175, y);
-        y += 7;
-      });
-      
-      // Totaux
-      y += 10;
-      pdf.line(140, y, 200, y);
-      y += 7;
-      pdf.text('Sous-total:', 140, y);
-      pdf.text(`${(doc.sous_total || 0).toLocaleString()} FCFA`, 175, y);
-      y += 7;
-      pdf.text(`TVA (${doc.tva}%):`, 140, y);
-      pdf.text(`${((doc.sous_total || 0) * (doc.tva || 0) / 100).toLocaleString()} FCFA`, 175, y);
-      y += 7;
-      pdf.setFontSize(12);
-      pdf.text('TOTAL:', 140, y);
-      pdf.text(`${(doc.total || 0).toLocaleString()} FCFA`, 175, y);
-      
-      // Notes
-      if (doc.notes) {
-        y += 15;
-        pdf.setFontSize(9);
-        pdf.text('Notes:', 20, y);
-        y += 5;
-        const notes = pdf.splitTextToSize(doc.notes, 170);
-        pdf.text(notes, 20, y);
-      }
-      
-      pdf.save(`${type}-${doc.numero}.pdf`);
-      toast.success('PDF téléchargé');
-    } catch (e) {
-      toast.error('Erreur lors de la génération du PDF');
-      console.error(e);
+  const downloadPDF = (doc, type) => {
+    const pdf = new jsPDF();
+    
+    // Header
+    pdf.setFillColor(37, 99, 235);
+    pdf.rect(0, 0, 210, 40, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(24);
+    pdf.text('Imprimerie Ogooué', 20, 20);
+    pdf.setFontSize(10);
+    pdf.text('Moanda, Gabon', 20, 28);
+    pdf.text('Carrefour Fina en face de FINAM', 20, 34);
+    
+    // Document type and number
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(18);
+    pdf.text(type === 'devis' ? 'DEVIS' : 'FACTURE', 150, 20);
+    pdf.setFontSize(12);
+    pdf.text(doc.numero, 150, 28);
+    
+    // Client info
+    pdf.setFontSize(10);
+    pdf.text('Client:', 20, 55);
+    pdf.setFontSize(12);
+    pdf.text(doc.client_nom, 20, 62);
+    if (doc.client_email) pdf.setFontSize(9) && pdf.text(doc.client_email, 20, 68);
+    if (doc.client_telephone) pdf.text(doc.client_telephone, 20, 73);
+    
+    // Dates
+    pdf.setFontSize(10);
+    pdf.text(`Date: ${moment(doc.date_emission).format('DD/MM/YYYY')}`, 150, 55);
+    if (doc.date_validite) {
+      pdf.text(`Validité: ${moment(doc.date_validite).format('DD/MM/YYYY')}`, 150, 62);
     }
+    if (doc.date_echeance) {
+      pdf.text(`Échéance: ${moment(doc.date_echeance).format('DD/MM/YYYY')}`, 150, 62);
+    }
+    
+    // Table header
+    let y = 90;
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(20, y, 170, 10, 'F');
+    pdf.setFontSize(10);
+    pdf.text('Description', 25, y + 7);
+    pdf.text('Qté', 120, y + 7);
+    pdf.text('P.U.', 140, y + 7);
+    pdf.text('Total', 165, y + 7);
+    
+    // Lines
+    y += 15;
+    doc.lignes?.forEach(ligne => {
+      if (y > 250) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFontSize(9);
+      pdf.text(ligne.description.substring(0, 50), 25, y);
+      pdf.text(String(ligne.quantite), 120, y);
+      pdf.text(`${ligne.prix_unitaire.toLocaleString()} F`, 140, y);
+      pdf.text(`${ligne.total.toLocaleString()} F`, 165, y);
+      y += 8;
+    });
+    
+    // Totals
+    y += 10;
+    pdf.setFontSize(10);
+    pdf.text('Sous-total:', 130, y);
+    pdf.text(`${doc.sous_total.toLocaleString()} FCFA`, 165, y);
+    y += 7;
+    pdf.text(`TVA (${doc.tva}%):`, 130, y);
+    pdf.text(`${((doc.sous_total * doc.tva) / 100).toLocaleString()} FCFA`, 165, y);
+    y += 10;
+    pdf.setFontSize(12);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('TOTAL:', 130, y);
+    pdf.text(`${doc.total.toLocaleString()} FCFA`, 165, y);
+    
+    // Notes
+    if (doc.notes) {
+      y += 15;
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'normal');
+      pdf.text('Notes:', 20, y);
+      pdf.text(doc.notes, 20, y + 5, { maxWidth: 170 });
+    }
+    
+    // Footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Imprimerie Ogooué - Moanda, Gabon', 105, 285, { align: 'center' });
+    
+    pdf.save(`${doc.numero}.pdf`);
+    toast.success('PDF téléchargé');
   };
 
   const getStatusBadge = (type, statut) => {
@@ -251,11 +263,11 @@ export default function DevisFactures() {
               <p className="font-bold text-slate-900">{(doc.total || 0).toLocaleString()} FCFA</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setSelectedDoc({ ...doc, type })}>
-                <Eye className="w-4 h-4" />
-              </Button>
               <Button variant="ghost" size="icon" onClick={() => downloadPDF(doc, type)} title="Télécharger PDF">
                 <Download className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedDoc({ ...doc, type })}>
+                <Eye className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => { setEditingDoc(doc); setActiveTab(type); setShowForm(true); }}>
                 <Edit className="w-4 h-4" />
@@ -466,6 +478,13 @@ export default function DevisFactures() {
                   <p className="text-sm text-slate-600">{selectedDoc.notes}</p>
                 </div>
               )}
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => downloadPDF(selectedDoc, selectedDoc.type)}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Télécharger PDF
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
