@@ -18,7 +18,9 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
-  Filter
+  Filter,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProduitCatalogueForm from '@/components/catalogue/ProduitCatalogueForm';
@@ -44,6 +46,7 @@ export default function Catalogue() {
   const [selectedProduits, setSelectedProduits] = useState([]);
   const [showGenerator, setShowGenerator] = useState(false);
   const [user, setUser] = useState(null);
+  const [generatingCatalogue, setGeneratingCatalogue] = useState(false);
   
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -129,6 +132,104 @@ export default function Catalogue() {
     setSelectedProduits([]);
   };
 
+  const genererCatalogueIA = async () => {
+    if (!confirm('Générer automatiquement tous les produits à partir des mockups ?\n\nCela peut prendre quelques minutes et créer environ 50+ produits.')) {
+      return;
+    }
+
+    setGeneratingCatalogue(true);
+    
+    try {
+      // Définir les produits mockup
+      const mockupProducts = [
+        // Textile
+        { nom: 'T-Shirt personnalisé', categorie: 'Textile', sous_categorie: 'T-shirts', prix: 3500 },
+        { nom: 'Polo personnalisé', categorie: 'Textile', sous_categorie: 'Polos', prix: 5000 },
+        { nom: 'Casquette brodée', categorie: 'Textile', sous_categorie: 'Accessoires', prix: 3000 },
+        { nom: 'Tote Bag personnalisé', categorie: 'Textile', sous_categorie: 'Sacs', prix: 2500 },
+        { nom: 'Tablier professionnel', categorie: 'Textile', sous_categorie: 'Cuisine', prix: 4000 },
+        
+        // Bureau & Papeterie
+        { nom: 'Carnet personnalisé A5', categorie: 'Impression & Saisie', sous_categorie: 'Carnets', prix: 2000 },
+        { nom: 'Stylo marqué', categorie: 'Impression & Saisie', sous_categorie: 'Stylos', prix: 500 },
+        { nom: 'Calendrier mural personnalisé', categorie: 'Calendriers & Tampons', sous_categorie: 'Calendriers', prix: 3500 },
+        { nom: 'Bloc-notes A4', categorie: 'Impression & Saisie', sous_categorie: 'Blocs', prix: 1500 },
+        
+        // Communication
+        { nom: 'Flyer A5 couleur', categorie: 'Marketing', sous_categorie: 'Flyers', prix: 100 },
+        { nom: 'Carte de visite premium', categorie: 'Marketing', sous_categorie: 'Cartes', prix: 25 },
+        { nom: 'Badge personnalisé', categorie: 'Marketing', sous_categorie: 'Badges', prix: 300 },
+        
+        // Signalisation
+        { nom: 'Banderole 3x1m', categorie: 'Signalétique', sous_categorie: 'Banderoles', prix: 25000 },
+        { nom: 'Kakemono 80x200cm', categorie: 'Signalétique', sous_categorie: 'Kakemonos', prix: 20000 },
+        { nom: 'Panneau publicitaire A1', categorie: 'Signalétique', sous_categorie: 'Panneaux', prix: 15000 },
+        
+        // EPI & Sécurité
+        { nom: 'Combinaison de travail', categorie: 'EPI & Sécurité', sous_categorie: 'Tenues', prix: 12000 },
+        { nom: 'Gilet haute visibilité', categorie: 'EPI & Sécurité', sous_categorie: 'Gilets', prix: 3500 },
+        { nom: 'Casque de sécurité marqué', categorie: 'EPI & Sécurité', sous_categorie: 'Protection', prix: 4000 }
+      ];
+
+      let created = 0;
+      
+      for (const produit of mockupProducts) {
+        // Vérifier si le produit existe déjà
+        const existing = produits.find(p => 
+          p.nom.toLowerCase() === produit.nom.toLowerCase()
+        );
+        
+        if (existing) {
+          continue;
+        }
+
+        toast.info(`Génération: ${produit.nom}...`);
+
+        // Générer description avec IA
+        const prompt = `Tu es un expert en communication commerciale pour l'Imprimerie Ogooué à Moanda, Gabon.
+
+Génère une description commerciale courte (2-3 lignes max) et professionnelle pour ce produit:
+- Produit: ${produit.nom}
+- Catégorie: ${produit.categorie}
+
+La description doit:
+- Être attractive et professionnelle
+- Mentionner les avantages clés
+- Être adaptée au marché gabonais
+- Ne pas dépasser 200 caractères
+
+Réponds uniquement avec la description, sans guillemets ni préambule.`;
+
+        const description = await base44.integrations.Core.InvokeLLM({ prompt });
+
+        // Créer le produit
+        await base44.entities.ProduitCatalogue.create({
+          nom: produit.nom,
+          categorie: produit.categorie,
+          sous_categorie: produit.sous_categorie || '',
+          description_courte: description,
+          prix_unitaire: produit.prix,
+          prix_a_partir_de: true,
+          delai_estime: '3-5 jours ouvrés',
+          actif: true,
+          visible_clients: true,
+          ordre: created,
+          tags: [produit.categorie.toLowerCase(), produit.sous_categorie?.toLowerCase()].filter(Boolean)
+        });
+
+        created++;
+      }
+
+      toast.success(`${created} produits créés avec succès!`);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération du catalogue');
+    } finally {
+      setGeneratingCatalogue(false);
+    }
+  };
+
   // Filtering
   const filteredProduits = produits.filter(p => {
     if (categoryFilter !== 'all' && p.categorie !== categoryFilter) return false;
@@ -160,6 +261,24 @@ export default function Catalogue() {
           <p className="text-slate-500">Gérez vos produits et générez des catalogues PDF</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={genererCatalogueIA}
+            disabled={generatingCatalogue}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+          >
+            {generatingCatalogue ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Génération IA...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Générer avec IA
+              </>
+            )}
+          </Button>
           <Button onClick={() => { setEditingProduit(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Nouveau produit
