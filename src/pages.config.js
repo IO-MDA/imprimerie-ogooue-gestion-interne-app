@@ -18,6 +18,8 @@ import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
+import Pointage from './pages/Pointage';
+import Avances from './pages/Avances';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +44,8 @@ export const PAGES = {
     "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
+    "Pointage": Pointage,
+    "Avances": Avances,
 }
 
 export const pagesConfig = {

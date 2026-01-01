@@ -64,35 +64,37 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = user?.role === 'admin';
 
-  // Navigation selon le rôle
+  // Navigation selon le rôle (admin, manager, user/employe)
   const allNavigation = [
-          { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
-          { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'user'] },
-          { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'user'] },
-          { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'user'] },
-          { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'user'] },
-          { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'user'] },
-          { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'user'] },
-          { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'user'] },
-          { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'user'] },
-          { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin'] },
-          { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin'] },
-          { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin'] },
-          { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin'] },
-          { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin'] },
-          { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
-          { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
-          { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin'] },
-          { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin'] },
-          { 
-            name: 'Demandes modification', 
-            href: 'DemandesModification', 
-            icon: FileCheck,
-            badge: pendingRequests,
-            roles: ['admin']
-          },
-          { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
-        ];
+        { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+        { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'] },
+        { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'manager', 'user'] },
+        { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
+        { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'manager', 'user'] },
+        { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'manager', 'user'] },
+        { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'manager', 'user'] },
+        { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'manager', 'user'] },
+        { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'manager', 'user'] },
+        { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'manager', 'user'] },
+        { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+        { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin', 'manager'] },
+        { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+        { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin', 'manager'] },
+        { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin', 'manager'] },
+        { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
+        { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
+        { name: 'Avances & Restes à payer', href: 'Avances', icon: Receipt, roles: ['admin', 'manager'] },
+        { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin', 'manager'] },
+        { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin', 'manager'] },
+        { 
+          name: 'Demandes modification', 
+          href: 'DemandesModification', 
+          icon: FileCheck,
+          badge: pendingRequests,
+          roles: ['admin', 'manager']
+        },
+        { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
+      ];
 
   // Filtrer selon le rôle
   const navigation = allNavigation.filter(item => 
@@ -193,7 +195,7 @@ export default function Layout({ children, currentPageName }) {
                         {user.full_name || user.email}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {isAdmin ? 'Administrateur' : 'Opérateur'}
+                        {user.role === 'admin' ? 'Administrateur' : user.role === 'manager' ? 'Manager' : 'Employé'}
                       </p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-slate-400" />
