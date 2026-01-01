@@ -162,14 +162,206 @@ Réponds uniquement par un seul mot parmi: devis, commande, reclamation, suivi, 
     }
   };
 
-  const handleQuickAction = (actionId) => {
-    const actions = {
-      devis: 'Bonjour, pour établir un devis précis, j\'aurais besoin de quelques informations:\n- Type de support souhaité\n- Quantité\n- Format/dimensions\n- Délai souhaité\n\nJe vous prépare un devis dans les meilleurs délais.',
-      visuel: 'Bonjour, pourriez-vous m\'envoyer le visuel que vous souhaitez imprimer ? (logo, design, photo)\nFormats acceptés: PNG, JPG, PDF, AI',
-      confirmer: 'Bonjour, votre commande est confirmée !\nNous démarrons la production dans les plus brefs délais.\nVous serez notifié dès que votre commande sera prête.',
-      delai: 'Bonjour, le délai de réalisation pour votre commande est estimé à:\n- Production: X jours ouvrés\n- Livraison: +X jours\n\nNous vous tiendrons informé de l\'avancement.'
-    };
-    setReplyText(actions[actionId] || '');
+  const handleQuickAction = async (actionId) => {
+    if (actionId === 'devis_ia') {
+      await generateDevisWithAI();
+    } else if (actionId === 'facture_ia') {
+      await generateFactureWithAI();
+    } else {
+      const actions = {
+        devis: 'Bonjour, pour établir un devis précis, j\'aurais besoin de quelques informations:\n- Type de support souhaité\n- Quantité\n- Format/dimensions\n- Délai souhaité\n\nJe vous prépare un devis dans les meilleurs délais.',
+        visuel: 'Bonjour, pourriez-vous m\'envoyer le visuel que vous souhaitez imprimer ? (logo, design, photo)\nFormats acceptés: PNG, JPG, PDF, AI',
+        confirmer: 'Bonjour, votre commande est confirmée !\nNous démarrons la production dans les plus brefs délais.\nVous serez notifié dès que votre commande sera prête.',
+        delai: 'Bonjour, le délai de réalisation pour votre commande est estimé à:\n- Production: X jours ouvrés\n- Livraison: +X jours\n\nNous vous tiendrons informé de l\'avancement.'
+      };
+      setReplyText(actions[actionId] || '');
+    }
+  };
+
+  const generateDevisWithAI = async () => {
+    if (!selectedConversation) return;
+    
+    setSending(true);
+    try {
+      const context = messages.slice(-10).map(m => 
+        `${m.est_operateur ? 'Agent' : 'Client'}: ${m.contenu}`
+      ).join('\n');
+
+      const prompt = `Tu es un assistant commercial pour Imprimerie Ogooué à Moanda, Gabon.
+
+Contexte de la conversation:
+${context}
+
+Mission: Génère un devis détaillé en JSON basé sur la conversation. Analyse les besoins du client et propose:
+- Les produits/services appropriés (t-shirts, flyers, banderoles, mugs, etc.)
+- Quantités estimées
+- Prix unitaires réalistes pour le marché gabonais
+- Prix totaux
+
+Format JSON requis:
+{
+  "client_nom": "${selectedConversation.client_nom}",
+  "lignes": [
+    {"description": "Nom du produit/service", "quantite": 10, "prix_unitaire": 5000, "total": 50000}
+  ],
+  "notes": "Description du devis"
+}`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            client_nom: { type: "string" },
+            lignes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  description: { type: "string" },
+                  quantite: { type: "number" },
+                  prix_unitaire: { type: "number" },
+                  total: { type: "number" }
+                }
+              }
+            },
+            notes: { type: "string" }
+          }
+        }
+      });
+
+      // Créer le devis
+      const devisData = {
+        ...result,
+        client_id: selectedConversation.client_id,
+        date_emission: new Date().toISOString().split('T')[0],
+        date_validite: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        statut: 'brouillon',
+        sous_total: result.lignes.reduce((sum, l) => sum + l.total, 0),
+        total: result.lignes.reduce((sum, l) => sum + l.total, 0),
+        numero: `DEV${Date.now()}`
+      };
+
+      const devis = await base44.entities.Devis.create(devisData);
+
+      // Générer le PDF
+      const { generateQuotePDF } = await import('@/utils/pdfGenerator');
+      const pdf = await generateQuotePDF(devisData);
+      const pdfBlob = pdf.output('blob');
+
+      // Upload le PDF
+      const file = new File([pdfBlob], `devis_${devis.numero}.pdf`, { type: 'application/pdf' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // Envoyer par email
+      await base44.integrations.Core.SendEmail({
+        from_name: 'Imprimerie Ogooué',
+        to: selectedConversation.client_email || 'client@email.com',
+        subject: `Devis ${devis.numero} - Imprimerie Ogooué`,
+        body: `Bonjour ${selectedConversation.client_nom},\n\nVeuillez trouver ci-joint votre devis.\n\nLien: ${file_url}\n\nCordialement,\nImprimerie Ogooué`
+      });
+
+      toast.success('Devis généré et envoyé par email');
+      setReplyText(`Bonjour, je viens de vous envoyer le devis n°${devis.numero} par email. N'hésitez pas si vous avez des questions !`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération du devis');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const generateFactureWithAI = async () => {
+    if (!selectedConversation) return;
+    
+    setSending(true);
+    try {
+      const context = messages.slice(-10).map(m => 
+        `${m.est_operateur ? 'Agent' : 'Client'}: ${m.contenu}`
+      ).join('\n');
+
+      const prompt = `Tu es un assistant commercial pour Imprimerie Ogooué à Moanda, Gabon.
+
+Contexte de la conversation:
+${context}
+
+Mission: Génère une facture détaillée en JSON basé sur la commande confirmée. Inclus:
+- Les produits/services fournis
+- Quantités exactes
+- Prix unitaires
+- Prix totaux
+
+Format JSON requis:
+{
+  "client_nom": "${selectedConversation.client_nom}",
+  "lignes": [
+    {"description": "Nom du produit/service", "quantite": 10, "prix_unitaire": 5000, "total": 50000}
+  ],
+  "notes": "Description de la facture"
+}`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            client_nom: { type: "string" },
+            lignes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  description: { type: "string" },
+                  quantite: { type: "number" },
+                  prix_unitaire: { type: "number" },
+                  total: { type: "number" }
+                }
+              }
+            },
+            notes: { type: "string" }
+          }
+        }
+      });
+
+      // Créer la facture
+      const factureData = {
+        ...result,
+        client_id: selectedConversation.client_id,
+        date_emission: new Date().toISOString().split('T')[0],
+        date_echeance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        statut: 'envoyee',
+        sous_total: result.lignes.reduce((sum, l) => sum + l.total, 0),
+        total: result.lignes.reduce((sum, l) => sum + l.total, 0),
+        numero: `FACT${Date.now()}`
+      };
+
+      const facture = await base44.entities.Facture.create(factureData);
+
+      // Générer le PDF
+      const { generateInvoicePDF } = await import('@/utils/pdfGenerator');
+      const pdf = await generateInvoicePDF(factureData);
+      const pdfBlob = pdf.output('blob');
+
+      // Upload le PDF
+      const file = new File([pdfBlob], `facture_${facture.numero}.pdf`, { type: 'application/pdf' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // Envoyer par email
+      await base44.integrations.Core.SendEmail({
+        from_name: 'Imprimerie Ogooué',
+        to: selectedConversation.client_email || 'client@email.com',
+        subject: `Facture ${facture.numero} - Imprimerie Ogooué`,
+        body: `Bonjour ${selectedConversation.client_nom},\n\nVeuillez trouver ci-joint votre facture.\n\nLien: ${file_url}\n\nCordialement,\nImprimerie Ogooué`
+      });
+
+      toast.success('Facture générée et envoyée par email');
+      setReplyText(`Bonjour, je viens de vous envoyer la facture n°${facture.numero} par email. Merci pour votre confiance !`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération de la facture');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleUseTemplate = (template) => {

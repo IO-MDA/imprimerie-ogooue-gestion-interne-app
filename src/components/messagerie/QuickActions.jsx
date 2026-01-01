@@ -1,8 +1,10 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { FileText, Image, Package, Clock } from 'lucide-react';
+import { FileText, Image, Package, Clock, Receipt, Sparkles } from 'lucide-react';
 
 const QUICK_ACTIONS = [
+  { id: 'devis_ia', label: 'Générer devis (IA)', icon: Sparkles, variant: 'default' },
+  { id: 'facture_ia', label: 'Générer facture (IA)', icon: Receipt, variant: 'default' },
   { id: 'devis', label: 'Envoyer devis', icon: FileText },
   { id: 'visuel', label: 'Demander visuel', icon: Image },
   { id: 'confirmer', label: 'Confirmer commande', icon: Package },
@@ -17,10 +19,10 @@ export default function QuickActions({ onAction }) {
         return (
           <Button
             key={action.id}
-            variant="outline"
+            variant={action.variant || 'outline'}
             size="sm"
             onClick={() => onAction(action.id)}
-            className="justify-start"
+            className={action.variant === 'default' ? 'bg-purple-600 hover:bg-purple-700' : 'justify-start'}
           >
             <Icon className="w-4 h-4 mr-2" />
             {action.label}
