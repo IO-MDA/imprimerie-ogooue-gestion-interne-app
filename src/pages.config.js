@@ -8,13 +8,13 @@ import DemandeModification from './pages/DemandeModification';
 import DemandesModification from './pages/DemandesModification';
 import DevisFactures from './pages/DevisFactures';
 import Evenements from './pages/Evenements';
+import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
 import Parametres from './pages/Parametres';
 import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Finances from './pages/Finances';
 import __Layout from './Layout.jsx';
 
 
@@ -29,13 +29,13 @@ export const PAGES = {
     "DemandesModification": DemandesModification,
     "DevisFactures": DevisFactures,
     "Evenements": Evenements,
+    "Finances": Finances,
     "Messagerie": Messagerie,
     "Parametres": Parametres,
     "Projets": Projets,
     "Prospection": Prospection,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Finances": Finances,
 }
 
 export const pagesConfig = {
