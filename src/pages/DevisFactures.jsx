@@ -167,26 +167,35 @@ export default function DevisFactures() {
         y = 20;
       }
       pdf.setFontSize(9);
-      pdf.text(ligne.description.substring(0, 50), 25, y);
-      pdf.text(String(ligne.quantite), 120, y);
-      pdf.text(`${ligne.prix_unitaire.toLocaleString()} F`, 140, y);
-      pdf.text(`${ligne.total.toLocaleString()} F`, 165, y);
+      const description = String(ligne.description || '').substring(0, 50);
+      const quantite = String(ligne.quantite || 0);
+      const prixUnitaire = String(Math.round(ligne.prix_unitaire || 0));
+      const total = String(Math.round(ligne.total || 0));
+      
+      pdf.text(description, 25, y);
+      pdf.text(quantite, 120, y);
+      pdf.text(prixUnitaire + ' F', 140, y);
+      pdf.text(total + ' F', 165, y);
       y += 8;
     });
     
     // Totals
     y += 10;
     pdf.setFontSize(10);
+    const sousTotal = String(Math.round(doc.sous_total || 0));
+    const montantTVA = String(Math.round(((doc.sous_total || 0) * (doc.tva || 0)) / 100));
+    const total = String(Math.round(doc.total || 0));
+    
     pdf.text('Sous-total:', 130, y);
-    pdf.text(`${doc.sous_total.toLocaleString()} FCFA`, 165, y);
+    pdf.text(sousTotal + ' FCFA', 165, y);
     y += 7;
-    pdf.text(`TVA (${doc.tva}%):`, 130, y);
-    pdf.text(`${((doc.sous_total * doc.tva) / 100).toLocaleString()} FCFA`, 165, y);
+    pdf.text('TVA (' + (doc.tva || 0) + '%):', 130, y);
+    pdf.text(montantTVA + ' FCFA', 165, y);
     y += 10;
     pdf.setFontSize(12);
     pdf.setFont(undefined, 'bold');
     pdf.text('TOTAL:', 130, y);
-    pdf.text(`${doc.total.toLocaleString()} FCFA`, 165, y);
+    pdf.text(total + ' FCFA', 165, y);
     
     // Notes
     if (doc.notes) {
