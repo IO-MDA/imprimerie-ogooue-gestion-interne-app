@@ -263,45 +263,34 @@ Soyez précis et professionnel.`;
   const generatePDF = async () => {
     if (generatedMockups.length === 0) return null;
 
-    const pdf = new jsPDF();
+    const { generateMockupPDF, addHeader, addFooter, addStamp } = await import('@/components/utils/pdfGenerator');
+    
+    const mockupData = {
+      clientName,
+      type: getCurrentMockupType().name,
+      color: selectedColor,
+      size: selectedSize === 'personnalisé' ? customSize : selectedSize
+    };
+    
+    const pdf = await generateMockupPDF(mockupData);
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    // En-tête
-    pdf.setFillColor(59, 130, 246);
-    pdf.rect(0, 0, pageWidth, 40, 'F');
     
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(24);
-    pdf.text('Imprimerie Ogooué', 20, 25);
-    
-    pdf.setFontSize(12);
-    pdf.text('Proposition de Mockup', 20, 35);
-
-    // Info client
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(12);
-    pdf.text(`Client: ${clientName}`, 20, 55);
-    pdf.text(`Type: ${getCurrentMockupType().name}`, 20, 65);
-    if (selectedColor) pdf.text(`Couleur: ${selectedColor}`, 20, 75);
-    if (selectedSize) pdf.text(`Taille: ${selectedSize}`, 20, 75);
-
-    // Ajouter les images
-    let yPosition = 90;
+    let yPosition = 110;
     
     for (let i = 0; i < generatedMockups.length; i++) {
       const mockup = generatedMockups[i];
       
       if (i > 0) {
         pdf.addPage();
-        yPosition = 20;
+        addHeader(pdf);
+        yPosition = 80;
       }
 
-      pdf.setFontSize(14);
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, 'bold');
       pdf.text(mockup.angle, 20, yPosition);
       
       try {
-        // Charger l'image
         const img = await fetch(mockup.url);
         const blob = await img.blob();
         const reader = new FileReader();
@@ -309,8 +298,7 @@ Soyez précis et professionnel.`;
         await new Promise((resolve) => {
           reader.onloadend = () => {
             const imgData = reader.result;
-            // Ajouter l'image au PDF
-            pdf.addImage(imgData, 'JPEG', 20, yPosition + 10, pageWidth - 40, 120);
+            pdf.addImage(imgData, 'JPEG', 20, yPosition + 5, pageWidth - 40, 100);
             resolve();
           };
           reader.readAsDataURL(blob);
@@ -318,13 +306,12 @@ Soyez précis et professionnel.`;
       } catch (e) {
         console.error('Erreur chargement image:', e);
       }
+      
+      yPosition += 110;
     }
 
-    // Pied de page sur la dernière page
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('Imprimerie Ogooué - Libreville, Gabon', pageWidth / 2, pageHeight - 10, { align: 'center' });
-    pdf.text('Contactez-nous pour concrétiser votre projet', pageWidth / 2, pageHeight - 5, { align: 'center' });
+    addStamp(pdf);
+    addFooter(pdf);
 
     return pdf.output('datauristring');
   };
