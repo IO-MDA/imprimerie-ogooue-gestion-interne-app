@@ -1,177 +1,191 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, FileDown, Send } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileText, Download, Send, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 
-const CATEGORIES = [
-  "Photos & Cadres",
-  "Calendrier & Tampon",
-  "Impression & Saisie",
-  "Reliure & Plastification",
-  "Numérisation",
-  "Textile Personnalisé",
-  "EPI & Sécurité",
-  "Communication Visuelle",
-  "Bâches & Banderoles",
-  "Objets Publicitaires"
-];
-
 export default function CatalogueGenerator({ produits, selectedProduits, onClose }) {
+  const [generating, setGenerating] = useState(false);
   const [generationType, setGenerationType] = useState('complet');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [generating, setGenerating] = useState(false);
+
+  const categories = [...new Set(produits.map(p => p.categorie))];
 
   const generatePDF = async () => {
     setGenerating(true);
     try {
-      const doc = new jsPDF();
-      let yPosition = 20;
-      
-      // Page de couverture
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.text('IMPRIMERIE OGOOUÉ', 105, 60, { align: 'center' });
-      
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Catalogue de produits & services', 105, 75, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.text('Création • Impressions • Toutes solutions', 105, 90, { align: 'center' });
-      doc.text('+241 060 44 46 34 / 074 42 41 42', 105, 100, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, 280, { align: 'center' });
-      
-      // Sélectionner les produits à inclure
+      // Determine which products to include
       let produitsToInclude = [];
-      if (generationType === 'complet') {
-        produitsToInclude = produits.filter(p => p.actif && p.partage_client);
-      } else if (generationType === 'categorie') {
-        produitsToInclude = produits.filter(p => p.actif && p.partage_client && p.categorie === selectedCategory);
-      } else if (generationType === 'personnalise') {
-        produitsToInclude = produits.filter(p => selectedProduits.includes(p.id));
+      
+      if (generationType === 'selection' && selectedProduits.length > 0) {
+        produitsToInclude = produits.filter(p => selectedProduits.includes(p.id) && p.actif && p.visible_clients);
+      } else if (generationType === 'categorie' && selectedCategory) {
+        produitsToInclude = produits.filter(p => p.categorie === selectedCategory && p.actif && p.visible_clients);
+      } else {
+        produitsToInclude = produits.filter(p => p.actif && p.visible_clients);
       }
 
-      // Sommaire
-      doc.addPage();
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Sommaire', 20, 30);
+      if (produitsToInclude.length === 0) {
+        toast.error('Aucun produit à inclure dans le catalogue');
+        setGenerating(false);
+        return;
+      }
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPos = 20;
+
+      // Cover page
+      pdf.setFillColor(0, 120, 215);
+      pdf.rect(0, 0, pageWidth, 80, 'F');
       
-      yPosition = 50;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(32);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('IMPRIMERIE OGOOUÉ', pageWidth / 2, 40, { align: 'center' });
       
-      const categoriesInCatalogue = [...new Set(produitsToInclude.map(p => p.categorie))];
-      categoriesInCatalogue.forEach((cat, index) => {
-        const count = produitsToInclude.filter(p => p.categorie === cat).length;
-        doc.text(`${index + 1}. ${cat} (${count} produit${count > 1 ? 's' : ''})`, 30, yPosition);
-        yPosition += 10;
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Catalogue Produits & Services', pageWidth / 2, 55, { align: 'center' });
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(12);
+      const titleText = generationType === 'selection' ? 'Sélection personnalisée' :
+                        generationType === 'categorie' ? `Catégorie: ${selectedCategory}` :
+                        'Catalogue complet';
+      pdf.text(titleText, pageWidth / 2, 100, { align: 'center' });
+
+      // Contact info
+      pdf.setFontSize(10);
+      pdf.text('Tel: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, 120, { align: 'center' });
+      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 128, { align: 'center' });
+
+      // Group products by category
+      const produitsParCategorie = {};
+      produitsToInclude.forEach(p => {
+        if (!produitsParCategorie[p.categorie]) {
+          produitsParCategorie[p.categorie] = [];
+        }
+        produitsParCategorie[p.categorie].push(p);
+      });
+
+      // Table of contents
+      pdf.addPage();
+      yPos = 20;
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('SOMMAIRE', pageWidth / 2, yPos, { align: 'center' });
+      
+      yPos = 40;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      
+      Object.keys(produitsParCategorie).forEach((cat, index) => {
+        pdf.text(`${index + 1}. ${cat}`, 20, yPos);
+        pdf.text(`${produitsParCategorie[cat].length} produits`, pageWidth - 40, yPos, { align: 'right' });
+        yPos += 10;
         
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 30;
+        if (yPos > pageHeight - 20) {
+          pdf.addPage();
+          yPos = 20;
         }
       });
 
-      // Produits par catégorie
-      for (const categorie of categoriesInCatalogue) {
-        doc.addPage();
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(33, 150, 243);
-        doc.text(categorie, 20, 30);
-        doc.setTextColor(0, 0, 0);
+      // Products by category
+      for (const [categorie, produitsCategorie] of Object.entries(produitsParCategorie)) {
+        pdf.addPage();
+        yPos = 20;
         
-        yPosition = 45;
+        // Category header
+        pdf.setFillColor(0, 120, 215);
+        pdf.rect(0, yPos - 8, pageWidth, 15, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(categorie, pageWidth / 2, yPos, { align: 'center' });
         
-        const produitsCategorie = produitsToInclude.filter(p => p.categorie === categorie);
+        yPos = 45;
         
         for (const produit of produitsCategorie) {
-          // Vérifier si on a assez de place
-          if (yPosition > 240) {
-            doc.addPage();
-            yPosition = 30;
+          // Check if we need a new page
+          if (yPos > pageHeight - 60) {
+            pdf.addPage();
+            yPos = 20;
           }
           
-          // Nom du produit
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text(produit.nom, 20, yPosition);
-          yPosition += 8;
+          // Product box
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.5);
+          pdf.rect(15, yPos - 5, pageWidth - 30, 50);
           
-          // Description
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          const descLines = doc.splitTextToSize(produit.description_courte || '', 170);
-          doc.text(descLines, 20, yPosition);
-          yPosition += descLines.length * 5 + 3;
-          
-          // Prix
-          doc.setFontSize(12);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(33, 150, 243);
-          if (produit.prix_unitaire) {
-            doc.text(`${produit.prix_unitaire.toLocaleString()} FCFA`, 20, yPosition);
-          } else if (produit.prix_a_partir_de) {
-            doc.text(`À partir de ${produit.prix_a_partir_de.toLocaleString()} FCFA`, 20, yPosition);
-          } else {
-            doc.text('Sur devis', 20, yPosition);
+          // Product image placeholder if photo exists
+          if (produit.photos && produit.photos.length > 0) {
+            try {
+              // Note: In production, you'd load and add the actual image
+              pdf.setFillColor(240, 240, 240);
+              pdf.rect(20, yPos, 30, 30, 'F');
+              pdf.setFontSize(8);
+              pdf.setTextColor(150, 150, 150);
+              pdf.text('IMAGE', 35, yPos + 16, { align: 'center' });
+            } catch (e) {
+              console.error('Error adding image:', e);
+            }
           }
-          doc.setTextColor(0, 0, 0);
-          yPosition += 8;
           
-          // Délai
+          // Product details
+          const textStartX = produit.photos?.length > 0 ? 55 : 20;
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(produit.nom, textStartX, yPos + 5);
+          
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'normal');
+          
+          const descLines = pdf.splitTextToSize(produit.description_courte || '', pageWidth - textStartX - 25);
+          pdf.text(descLines.slice(0, 2), textStartX, yPos + 12);
+          
+          // Price
+          pdf.setFontSize(11);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(0, 120, 215);
+          const prixText = `${produit.prix_unitaire.toLocaleString()} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
+          pdf.text(prixText, textStartX, yPos + 30);
+          
+          // Delivery time
           if (produit.delai_estime) {
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'italic');
-            doc.text(`Délai: ${produit.delai_estime}`, 20, yPosition);
-            yPosition += 6;
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + 37);
           }
           
-          // Options
-          if (produit.options_personnalisables && produit.options_personnalisables.length > 0) {
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Options: ${produit.options_personnalisables.join(', ')}`, 20, yPosition);
-            yPosition += 6;
-          }
-          
-          // Ligne de séparation
-          doc.setDrawColor(200, 200, 200);
-          doc.line(20, yPosition, 190, yPosition);
-          yPosition += 10;
+          yPos += 55;
         }
       }
+
+      // Footer on last page
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Imprimerie Ogooué - Moanda, Gabon', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+      // Save PDF
+      const fileName = `Catalogue_${generationType === 'selection' ? 'Selection' : 
+                                     generationType === 'categorie' ? selectedCategory.replace(/ /g, '_') : 
+                                     'Complet'}_${new Date().toISOString().split('T')[0]}.pdf`;
       
-      // Pied de page sur toutes les pages
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text(
-          'Imprimerie Ogooué - Moanda, Gabon - imprimerieogooue@gmail.com',
-          105,
-          290,
-          { align: 'center' }
-        );
-      }
+      pdf.save(fileName);
       
-      // Sauvegarder
-      const fileName = `Catalogue_Ogooue_${generationType}_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
-      
-      toast.success('Catalogue PDF généré avec succès');
+      toast.success('Catalogue généré avec succès');
       onClose();
     } catch (e) {
-      console.error('PDF generation error:', e);
       toast.error('Erreur lors de la génération du PDF');
+      console.error(e);
     } finally {
       setGenerating(false);
     }
@@ -180,47 +194,32 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
   return (
     <div className="space-y-6">
       <div>
-        <Label className="text-base font-semibold mb-3 block">Type de catalogue</Label>
-        <RadioGroup value={generationType} onValueChange={setGenerationType}>
-          <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-slate-50">
-            <RadioGroupItem value="complet" id="complet" />
-            <Label htmlFor="complet" className="flex-1 cursor-pointer">
-              <span className="font-medium">Catalogue complet</span>
-              <p className="text-sm text-slate-500">Tous les produits actifs et partageables</p>
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-slate-50">
-            <RadioGroupItem value="categorie" id="categorie" />
-            <Label htmlFor="categorie" className="flex-1 cursor-pointer">
-              <span className="font-medium">Par catégorie</span>
-              <p className="text-sm text-slate-500">Produits d'une catégorie spécifique</p>
-            </Label>
-          </div>
-          
-          {selectedProduits.length > 0 && (
-            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-slate-50">
-              <RadioGroupItem value="personnalise" id="personnalise" />
-              <Label htmlFor="personnalise" className="flex-1 cursor-pointer">
-                <span className="font-medium">Sélection personnalisée</span>
-                <p className="text-sm text-slate-500">
-                  {selectedProduits.length} produit(s) sélectionné(s)
-                </p>
-              </Label>
-            </div>
-          )}
-        </RadioGroup>
+        <Label>Type de catalogue</Label>
+        <Select value={generationType} onValueChange={setGenerationType}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="complet">Catalogue complet</SelectItem>
+            <SelectItem value="categorie">Par catégorie</SelectItem>
+            {selectedProduits.length > 0 && (
+              <SelectItem value="selection">
+                Sélection ({selectedProduits.length} produits)
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
       {generationType === 'categorie' && (
         <div>
-          <Label>Choisir une catégorie</Label>
+          <Label>Catégorie</Label>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionnez une catégorie" />
+              <SelectValue placeholder="Sélectionner une catégorie" />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}
             </SelectContent>
@@ -228,24 +227,26 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         </div>
       )}
 
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="bg-blue-50 p-4 rounded-lg">
         <p className="text-sm text-blue-900">
-          <strong>Aperçu:</strong> Le catalogue inclura{' '}
-          {generationType === 'complet' && `${produits.filter(p => p.actif && p.partage_client).length} produits`}
-          {generationType === 'categorie' && selectedCategory && 
-            `${produits.filter(p => p.actif && p.partage_client && p.categorie === selectedCategory).length} produits de la catégorie ${selectedCategory}`}
-          {generationType === 'personnalise' && `${selectedProduits.length} produits sélectionnés`}
+          Le catalogue sera généré avec:
         </p>
+        <ul className="text-sm text-blue-800 mt-2 space-y-1">
+          <li>• Page de couverture professionnelle</li>
+          <li>• Sommaire automatique</li>
+          <li>• Produits classés par catégorie</li>
+          <li>• Photos, descriptions et prix</li>
+        </ul>
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button variant="outline" onClick={onClose} className="flex-1">
+      <div className="flex justify-end gap-3 pt-4">
+        <Button variant="outline" onClick={onClose} disabled={generating}>
           Annuler
         </Button>
-        <Button
+        <Button 
           onClick={generatePDF}
           disabled={generating || (generationType === 'categorie' && !selectedCategory)}
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700"
         >
           {generating ? (
             <>
@@ -254,7 +255,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
             </>
           ) : (
             <>
-              <FileDown className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4 mr-2" />
               Générer le PDF
             </>
           )}

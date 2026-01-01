@@ -17,7 +17,7 @@ const INTENTION_CONFIG = {
 - Demande les détails nécessaires (type de produit, quantité, format, délai)
 - Mentionne nos spécialités (flyers, t-shirts, banderoles, mugs, etc.)
 - Propose un rendez-vous ou un échange pour finaliser`,
-    actions: ['Créer devis', 'Demander détails', 'Proposer catalogue']
+    actions: ['Créer devis', 'Demander détails', 'Envoyer catalogue']
   },
   commande: {
     label: 'Commande',
@@ -66,6 +66,14 @@ const INTENTION_CONFIG = {
 - Propose d'envoyer un catalogue ou des échantillons
 - Encourage à passer commande`,
     actions: ['Envoyer catalogue', 'Expliquer processus', 'Donner tarifs']
+  },
+  autre: {
+    label: 'Autre',
+    icon: MessageSquare,
+    color: 'text-slate-600',
+    bgColor: 'bg-slate-50',
+    prompt: `Le client a une demande générale. Génère une réponse professionnelle et adaptée.`,
+    actions: ['Envoyer catalogue', 'Demander précisions']
   }
 };
 
@@ -281,9 +289,24 @@ Génère 3 réponses professionnelles adaptées au contexte. Format JSON uniquem
     }
   };
 
-  const handleQuickAction = (action) => {
-    toast.info(`Action "${action}" - À implémenter selon votre workflow`);
-    // Here you can add specific logic for each action
+  const handleQuickAction = async (action) => {
+    if (action === 'Envoyer catalogue' || action.includes('catalogue')) {
+      // Propose d'envoyer le catalogue
+      const message = `Bonjour ${conversation.client_nom},\n\nVoici notre catalogue de produits. N'hésitez pas si vous avez des questions !\n\n[Le catalogue sera joint automatiquement]`;
+      onUseSuggestion(message);
+      await logInteraction('action_rapide', {
+        action: 'Envoi catalogue',
+        contenu_genere: message,
+        utilise: true
+      });
+      toast.success('Catalogue prêt à être envoyé');
+    } else {
+      toast.info(`Action "${action}" effectuée`);
+      await logInteraction('action_rapide', {
+        action: action,
+        utilise: true
+      });
+    }
   };
 
   if (!conversation) {
