@@ -227,6 +227,15 @@ export default function Bilans() {
     // Header
     pdf.setFillColor(59, 130, 246);
     pdf.rect(0, 0, pageWidth, 40, 'F');
+    
+    // Add logo
+    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
+    try {
+      pdf.addImage(logoUrl, 'PNG', pageWidth - 45, 5, 30, 30);
+    } catch (e) {
+      console.log('Logo non chargé');
+    }
+    
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
     pdf.text('Imprimerie Ogooué', 20, 20);
