@@ -30,6 +30,7 @@ import BottomNav from '@/components/client/BottomNav';
 import WhatsAppButton from '@/components/client/WhatsAppButton';
 import DemandeForm from '@/components/client/DemandeForm';
 import TimelineStatut from '@/components/client/TimelineStatut';
+import ClientFooter from '@/components/client/ClientFooter';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -289,9 +290,12 @@ export default function PortailClient() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 md:pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 pb-20 md:pb-6">
       {/* Header */}
-      <ClientHeader client={client} />
+      <ClientHeader 
+        client={client} 
+        notifications={demandes.filter(d => d.statut === 'repondu').length + facturesImpayees}
+      />
 
       {/* WhatsApp Button */}
       <WhatsAppButton />
@@ -301,17 +305,19 @@ export default function PortailClient() {
         {activeTab === 'accueil' && (
           <>
             {/* Welcome Card */}
-            <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white overflow-hidden">
-              <CardContent className="p-6">
-                <h1 className="text-2xl font-bold mb-2">
-                  Bonjour, {client.nom} 👋
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-24 -mb-24"></div>
+              <CardContent className="p-6 relative z-10">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                  Bienvenue, {client.nom} 👋
                 </h1>
-                <p className="text-blue-100 mb-4">
-                  Suivez vos commandes et gérez vos demandes
+                <p className="text-blue-100 mb-4 text-sm md:text-base">
+                  Suivez vos commandes en temps réel et gérez vos demandes facilement
                 </p>
                 <Button
                   onClick={() => setShowDemandeForm(true)}
-                  className="bg-white text-blue-600 hover:bg-blue-50"
+                  className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg font-medium"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nouvelle demande
@@ -320,62 +326,82 @@ export default function PortailClient() {
             </Card>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4 flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardContent className="p-5 flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-500">Commandes en cours</p>
-                    <p className="text-2xl font-bold text-blue-600">{totalCommandes}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Commandes</p>
+                    <p className="text-3xl font-bold text-blue-600 mt-1">{totalCommandes}</p>
+                    <p className="text-xs text-slate-400 mt-1">En cours</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <ShoppingBag className="w-6 h-6 text-blue-600" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <ShoppingBag className="w-7 h-7 text-white" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4 flex items-center justify-between">
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardContent className="p-5 flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-500">Factures en attente</p>
-                    <p className="text-2xl font-bold text-amber-600">{facturesImpayees}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Factures</p>
+                    <p className="text-3xl font-bold text-amber-600 mt-1">{facturesImpayees}</p>
+                    <p className="text-xs text-slate-400 mt-1">En attente</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-amber-600" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+                    <FileText className="w-7 h-7 text-white" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-4 flex items-center justify-between">
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardContent className="p-5 flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-500">Projets actifs</p>
-                    <p className="text-2xl font-bold text-emerald-600">{projetsActifs}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Projets</p>
+                    <p className="text-3xl font-bold text-emerald-600 mt-1">{projetsActifs}</p>
+                    <p className="text-xs text-slate-400 mt-1">Actifs</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <Package className="w-6 h-6 text-emerald-600" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <Package className="w-7 h-7 text-white" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Contact Info */}
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-slate-900 mb-3">Nous contacter</h3>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-blue-600" />
-                  <div>
-                    <p className="text-slate-600">+241 060 44 46 34</p>
-                    <p className="text-slate-600">+241 074 42 41 42</p>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageSquare className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-bold text-slate-900">Besoin d'aide ?</h3>
+                </div>
+                <div className="space-y-3">
+                  <a href="tel:+241060444634" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Appelez-nous</p>
+                      <p className="font-medium text-slate-900">+241 060 44 46 34</p>
+                    </div>
+                  </a>
+                  <a href="mailto:imprimerieogooue@gmail.com" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <Mail className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Envoyez un email</p>
+                      <p className="font-medium text-slate-900 text-sm">imprimerieogooue@gmail.com</p>
+                    </div>
+                  </a>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Notre adresse</p>
+                      <p className="font-medium text-slate-900 text-sm">Carrefour Fina, Moanda 🇬🇦</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="w-4 h-4 text-blue-600" />
-                  <p className="text-slate-600">imprimerieogooue@gmail.com</p>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="w-4 h-4 text-blue-600" />
-                  <p className="text-slate-600">Carrefour Fina en face de Finam, Moanda - Gabon</p>
                 </div>
               </CardContent>
             </Card>
