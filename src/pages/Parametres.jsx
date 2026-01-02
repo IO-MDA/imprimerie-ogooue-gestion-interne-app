@@ -34,6 +34,7 @@ export default function Parametres() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
+  const [inviteNom, setInviteNom] = useState('');
   const [user, setUser] = useState(null);
   const [reseaux, setReseaux] = useState([]);
   const [showSocialForm, setShowSocialForm] = useState(false);
@@ -69,12 +70,34 @@ export default function Parametres() {
       return;
     }
     
-    await base44.users.inviteUser(inviteEmail, inviteRole);
-    toast.success(`Invitation envoyée à ${inviteEmail}`);
-    setShowInvite(false);
-    setInviteEmail('');
-    setInviteRole('user');
-    loadData();
+    try {
+      if (inviteRole === 'client') {
+        // Invitation client via fonction dédiée
+        const response = await base44.functions.invoke('inviterClient', {
+          email: inviteEmail,
+          nom: inviteNom
+        });
+        
+        if (response.data.success) {
+          toast.success(`Invitation client envoyée à ${inviteEmail}`);
+        } else {
+          toast.error(response.data.error || 'Erreur lors de l\'invitation');
+        }
+      } else {
+        // Invitation employé (admin, manager, user)
+        await base44.users.inviteUser(inviteEmail, inviteRole);
+        toast.success(`Invitation employé envoyée à ${inviteEmail}`);
+      }
+      
+      setShowInvite(false);
+      setInviteEmail('');
+      setInviteNom('');
+      setInviteRole('user');
+      loadData();
+    } catch (e) {
+      toast.error('Erreur lors de l\'invitation');
+      console.error(e);
+    }
   };
 
   const initializeServices = async () => {
@@ -195,10 +218,13 @@ export default function Parametres() {
         {/* Users Tab */}
         <TabsContent value="users" className="mt-6 space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Gestion des utilisateurs</h2>
-            <Button onClick={() => setShowInvite(true)}>
+            <div>
+              <h2 className="text-lg font-semibold">Gestion des utilisateurs</h2>
+              <p className="text-sm text-slate-500">Invitez des employés ou des clients</p>
+            </div>
+            <Button onClick={() => setShowInvite(true)} className="bg-gradient-to-r from-blue-600 to-indigo-600">
               <UserPlus className="w-4 h-4 mr-2" />
-              Inviter un utilisateur
+              Inviter
             </Button>
           </div>
 
@@ -458,6 +484,16 @@ export default function Parametres() {
                 placeholder="email@exemple.com"
               />
             </div>
+            {inviteRole === 'client' && (
+              <div>
+                <Label>Nom du client</Label>
+                <Input 
+                  value={inviteNom}
+                  onChange={(e) => setInviteNom(e.target.value)}
+                  placeholder="Nom complet (optionnel)"
+                />
+              </div>
+            )}
             <div>
               <Label>Rôle</Label>
               <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -465,24 +501,41 @@ export default function Parametres() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="user">Employé/Opérateur</SelectItem>
+                  <SelectItem value="client">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      Client
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      Administrateur
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="manager">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      Manager
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="user">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                      Employé/Opérateur
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-slate-500 mt-1">
-                {inviteRole === 'admin' 
+                {inviteRole === 'client'
+                  ? '✅ Accès au portail client uniquement (commandes, catalogue, factures)'
+                  : inviteRole === 'admin' 
                   ? 'Accès complet à toutes les fonctionnalités et paramètres'
                   : inviteRole === 'manager'
                   ? 'Accès aux rapports et gestion d\'équipe'
                   : 'Accès limité aux opérations quotidiennes (pointage, rapports)'}
               </p>
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Pour inviter un <strong>client</strong>, utilisez la page d'inscription client publique.
-                  Les clients ne doivent pas être invités comme employés.
-                </p>
-              </div>
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setShowInvite(false)}>
