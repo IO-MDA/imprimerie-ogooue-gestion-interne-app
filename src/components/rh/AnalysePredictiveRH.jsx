@@ -304,7 +304,7 @@ Retourne un JSON structuré avec :
             </div>
           </CardContent>
         )}
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
