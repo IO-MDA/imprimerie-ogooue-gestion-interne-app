@@ -18,7 +18,9 @@ import {
   Receipt,
   ClipboardList,
   Printer,
-  Clock
+  Clock,
+  Megaphone,
+  Target
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,8 +77,9 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'manager', 'user'] },
         { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'manager', 'user'] },
         { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'manager', 'user'] },
-        { name: 'Annonces', href: 'Annonces', icon: Bell, roles: ['admin', 'manager', 'user'] },
+        { name: 'Communications', href: 'Annonces', icon: Megaphone, roles: ['admin', 'manager', 'user'] },
         { name: 'Demande modification', href: 'DemandeModification', icon: FileCheck, roles: ['admin', 'manager', 'user'] },
+        { name: 'Objectifs', href: 'Objectifs', icon: Target, roles: ['admin', 'manager'] },
         { name: 'Projets', href: 'Projets', icon: LayoutDashboard, roles: ['admin', 'manager'] },
         { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin', 'manager'] },
         { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin', 'manager'] },
@@ -132,9 +135,11 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="flex items-center justify-between h-20 px-6 border-b border-slate-100">
             <Link to={createPageUrl('Dashboard')} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Printer className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/e66e417ff_LOGO-BON-FINAL1.png" 
+                alt="Imprimerie OGOOUE" 
+                className="w-12 h-12 rounded-xl object-contain"
+              />
               <div>
                 <h1 className="text-lg font-bold text-slate-900 tracking-tight">Imprimerie</h1>
                 <p className="text-xs text-slate-500 -mt-0.5">OGOOUE</p>

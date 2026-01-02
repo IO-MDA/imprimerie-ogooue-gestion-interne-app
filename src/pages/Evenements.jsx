@@ -16,10 +16,13 @@ import {
   Edit,
   Trash2,
   PartyPopper,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import moment from 'moment';
+import EvenementCalendar from '@/components/evenements/EvenementCalendar';
+import CampagneIA from '@/components/evenements/CampagneIA';
 
 export default function Evenements() {
   const [evenements, setEvenements] = useState([]);
@@ -27,6 +30,8 @@ export default function Evenements() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showCampagne, setShowCampagne] = useState(false);
   const [formData, setFormData] = useState({
     nom: '',
     date: '',
@@ -216,6 +221,20 @@ Imprimerie Ogooué`
         )}
       </div>
 
+      {/* Calendar View */}
+      <EvenementCalendar 
+        evenements={evenements}
+        onSelectEvent={(event) => {
+          setSelectedEvent(event);
+          setShowCampagne(true);
+        }}
+        onAddEvent={() => { 
+          setEditingEvent(null); 
+          resetForm(); 
+          setShowForm(true); 
+        }}
+      />
+
       {/* Alert for upcoming events */}
       {upcomingEvents.filter(e => moment(e.date).diff(moment(), 'days') <= 30).length > 0 && (
         <Card className="border-2 border-amber-300 bg-amber-50">
@@ -293,16 +312,29 @@ Imprimerie Ogooué`
                         </div>
                       </div>
 
-                      {isAdmin && (
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => { setEditingEvent(event); setFormData(event); setShowForm(true); }}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(event)} className="text-rose-600">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setShowCampagne(true);
+                          }}
+                          className="text-violet-600"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => { setEditingEvent(event); setFormData(event); setShowForm(true); }}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(event)} className="text-rose-600">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -430,6 +462,16 @@ Imprimerie Ogooué`
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Campagne IA Dialog */}
+      <Dialog open={showCampagne} onOpenChange={setShowCampagne}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Campagne Marketing IA</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && <CampagneIA event={selectedEvent} />}
         </DialogContent>
       </Dialog>
     </div>
