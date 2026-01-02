@@ -351,7 +351,7 @@ export default function Avances() {
                         <SelectValue placeholder="Sélectionner le bailleur" />
                       </SelectTrigger>
                       <SelectContent>
-                        {chargesFixes.filter(c => c.type === 'loyer' && c.active).map(c => (
+                        {chargesFixes.filter(c => c.type === 'loyer' && c.active && c.beneficiaire).map(c => (
                           <SelectItem key={c.id} value={c.beneficiaire}>{c.beneficiaire}</SelectItem>
                         ))}
                       </SelectContent>
