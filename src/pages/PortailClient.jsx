@@ -38,6 +38,7 @@ export default function PortailClient() {
   const [catalogueSearch, setCatalogueSearch] = useState('');
   const [profileForm, setProfileForm] = useState({
     nom: '',
+    email: '',
     telephone: '',
     adresse: '',
     type: 'particulier'
@@ -54,6 +55,7 @@ export default function PortailClient() {
       setUser(userData);
       setProfileForm({
         nom: userData?.full_name || '',
+        email: userData?.email || '',
         telephone: '',
         adresse: '',
         type: 'particulier'
@@ -124,7 +126,7 @@ export default function PortailClient() {
     try {
       const newClient = await base44.entities.Client.create({
         nom: profileData.nom,
-        email: user.email,
+        email: profileData.email || user.email,
         telephone: profileData.telephone,
         adresse: profileData.adresse,
         type: profileData.type || 'particulier'
@@ -149,7 +151,7 @@ export default function PortailClient() {
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-slate-600 mb-6 text-center">
-              Bienvenue à l'Imprimerie OGOOUE ! Créez votre profil pour commencer à passer des commandes.
+              Bienvenue à l'Imprimerie OGOOUE ! Créez votre profil pour commencer à passer des commandes, suivre vos commandes et accéder à notre catalogue de services et produits complets avec les meilleurs prix de Moanda.
             </p>
             
             <div className="space-y-4">
@@ -163,8 +165,14 @@ export default function PortailClient() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <Input value={user?.email} disabled className="bg-slate-100" />
+                <label className="block text-sm font-medium mb-2">Email *</label>
+                <Input
+                  type="email"
+                  value={profileForm.email || user?.email || ''}
+                  onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                  placeholder="votre.email@example.com"
+                  required
+                />
               </div>
 
               <div>
@@ -199,7 +207,7 @@ export default function PortailClient() {
 
               <Button
                 onClick={() => handleCreateProfile(profileForm)}
-                disabled={!profileForm.nom || !profileForm.telephone}
+                disabled={!profileForm.nom || !profileForm.email || !profileForm.telephone}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
