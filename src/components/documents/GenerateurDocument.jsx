@@ -74,23 +74,25 @@ export default function GenerateurDocument({ modele, onClose }) {
         return;
       }
 
-      // Générer le PDF
+      // Générer le PDF avec encodage UTF-8 pour les caractères français
       const pdf = new jsPDF();
       
       // En-tête avec logo
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(modele.nom.toUpperCase(), 105, 20, { align: 'center' });
+      const titre = modele.nom.toUpperCase();
+      pdf.text(titre, 105, 20, { align: 'center' });
       
       // Ligne de séparation
       pdf.setLineWidth(0.5);
       pdf.line(20, 25, 190, 25);
       
       // Contenu
-      pdf.setFontSize(11);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       
-      const lignes = pdf.splitTextToSize(contenu, 170);
+      // Diviser le contenu en lignes
+      const lignes = contenu.split('\n');
       let y = 35;
       
       lignes.forEach(ligne => {
@@ -98,22 +100,36 @@ export default function GenerateurDocument({ modele, onClose }) {
           pdf.addPage();
           y = 20;
         }
-        pdf.text(ligne, 20, y);
-        y += 7;
+        
+        // Gérer les lignes longues
+        if (ligne.length > 0) {
+          const sousLignes = pdf.splitTextToSize(ligne, 170);
+          sousLignes.forEach(sousLigne => {
+            if (y > 270) {
+              pdf.addPage();
+              y = 20;
+            }
+            pdf.text(sousLigne, 20, y);
+            y += 6;
+          });
+        } else {
+          y += 6; // Ligne vide
+        }
       });
 
       // Pied de page
-      const totalPages = pdf.internal.pages.length - 1;
+      const totalPages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(9);
         pdf.setTextColor(150);
-        pdf.text(`IMPRIMERIE OGOOUÉ - Carrefour Fina, Moanda`, 105, 285, { align: 'center' });
+        pdf.text('IMPRIMERIE OGOOUE - Carrefour Fina, Moanda', 105, 285, { align: 'center' });
         pdf.text(`Page ${i} sur ${totalPages}`, 105, 290, { align: 'center' });
       }
 
       // Télécharger
-      pdf.save(`${modele.nom.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+      const nomFichier = `${modele.nom.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(nomFichier);
       
       toast.success('Document généré avec succès');
       onClose();

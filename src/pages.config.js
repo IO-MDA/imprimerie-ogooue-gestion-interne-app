@@ -25,6 +25,7 @@ import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
 import DemandesRH from './pages/DemandesRH';
 import ModelesDocuments from './pages/ModelesDocuments';
+import PerformanceEmployes from './pages/PerformanceEmployes';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "Travaux": Travaux,
     "DemandesRH": DemandesRH,
     "ModelesDocuments": ModelesDocuments,
+    "PerformanceEmployes": PerformanceEmployes,
 }
 
 export const pagesConfig = {
