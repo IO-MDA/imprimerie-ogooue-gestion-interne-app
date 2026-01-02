@@ -16,7 +16,9 @@ import {
   Clock,
   CheckCircle2,
   Search,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Truck,
+  MapPin
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
@@ -113,6 +115,17 @@ export default function PortailClient() {
       'termine': 'bg-green-100 text-green-700'
     };
     return colors[statut] || 'bg-slate-100 text-slate-700';
+  };
+
+  const getStatutCommandeConfig = (statut) => {
+    const configs = {
+      'en_attente': { label: 'En attente', icon: Clock, color: 'bg-slate-100 text-slate-700' },
+      'en_preparation': { label: 'En préparation', icon: Package, color: 'bg-blue-100 text-blue-700' },
+      'prete': { label: 'Prête', icon: CheckCircle2, color: 'bg-purple-100 text-purple-700' },
+      'expediee': { label: 'Expédiée', icon: Truck, color: 'bg-amber-100 text-amber-700' },
+      'livree': { label: 'Livrée', icon: MapPin, color: 'bg-emerald-100 text-emerald-700' }
+    };
+    return configs[statut] || configs['en_attente'];
   };
 
   const viewDocument = (doc) => {
@@ -497,6 +510,11 @@ export default function PortailClient() {
                         <Badge className={getStatusColor(f.statut)}>
                           {f.statut === 'payee' ? 'Payée' : f.statut}
                         </Badge>
+                        {f.statut_commande && (
+                          <Badge className={getStatutCommandeConfig(f.statut_commande).color}>
+                            {getStatutCommandeConfig(f.statut_commande).label}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-slate-600 mb-3">
                         Date: {moment(f.date).format('DD/MM/YYYY')}
