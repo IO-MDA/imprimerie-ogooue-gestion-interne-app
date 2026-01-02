@@ -9,7 +9,7 @@ export default function ClientFooter() {
         {/* Photo de l'imprimerie */}
         <div className="mb-8">
           <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/d3836b1e8_IMG_7126.JPG"
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/27b9fd35e_IMG_7126.JPG"
             alt="Imprimerie Ogooué - Moanda"
             className="w-full h-48 md:h-64 object-cover rounded-2xl shadow-2xl"
           />
@@ -37,8 +37,8 @@ export default function ClientFooter() {
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">Carrefour Fina, en face de Finam</p>
-                <p className="text-slate-400 text-sm">Moanda – Gabon 🇬🇦</p>
+                <p className="font-medium">Carrefour Fina en Face de Finam</p>
+                <p className="text-slate-400 text-sm">Moanda, Gabon 🇬🇦</p>
               </div>
             </div>
 
