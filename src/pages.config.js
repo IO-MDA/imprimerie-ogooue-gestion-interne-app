@@ -19,7 +19,6 @@ import Objectifs from './pages/Objectifs';
 import Parametres from './pages/Parametres';
 import PerformanceEmployes from './pages/PerformanceEmployes';
 import Pointage from './pages/Pointage';
-import PortailClient from './pages/PortailClient';
 import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
@@ -29,6 +28,7 @@ import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
+import PortailClient from './pages/PortailClient';
 import __Layout from './Layout.jsx';
 
 
@@ -54,7 +54,6 @@ export const PAGES = {
     "Parametres": Parametres,
     "PerformanceEmployes": PerformanceEmployes,
     "Pointage": Pointage,
-    "PortailClient": PortailClient,
     "Projets": Projets,
     "Prospection": Prospection,
     "Rapports": Rapports,
@@ -64,6 +63,7 @@ export const PAGES = {
     "Taches": Taches,
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
+    "PortailClient": PortailClient,
 }
 
 export const pagesConfig = {

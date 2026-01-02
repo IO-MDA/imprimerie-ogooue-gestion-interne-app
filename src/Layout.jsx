@@ -58,10 +58,13 @@ export default function Layout({ children, currentPageName }) {
       const clients = await base44.entities.Client.filter({ user_id: userData.id });
       if (clients.length > 0) {
         setClient(clients[0]);
-        setIsClient(true);
-        // Rediriger vers le portail client si pas déjà sur cette page
-        if (currentPageName !== 'PortailClient') {
-          window.location.href = '/PortailClient';
+        // Seuls les non-admins sont considérés comme clients purs
+        if (userData.role !== 'admin' && userData.role !== 'manager') {
+          setIsClient(true);
+          // Rediriger vers le portail client si pas déjà sur cette page
+          if (currentPageName !== 'PortailClient') {
+            window.location.href = '/PortailClient';
+          }
         }
       }
     } catch (e) {
