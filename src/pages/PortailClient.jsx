@@ -27,6 +27,7 @@ import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
 import SuggestionsIA from '@/components/catalogue/SuggestionsIA';
 import HistoriqueCommande from '@/components/commandes/HistoriqueCommande';
+import CatalogueGenerator from '@/components/catalogue/CatalogueGenerator';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -44,6 +45,9 @@ export default function PortailClient() {
   const [selectedProduit, setSelectedProduit] = useState(null);
   const [estimations, setEstimations] = useState({});
   const [loadingEstimation, setLoadingEstimation] = useState({});
+  const [commandes, setCommandes] = useState([]);
+  const [tarifsClients, setTarifsClients] = useState([]);
+  const [showCatalogueGenerator, setShowCatalogueGenerator] = useState(false);
   const [profileForm, setProfileForm] = useState({
     nom: '',
     email: '',
@@ -84,12 +88,14 @@ export default function PortailClient() {
 
       if (clientData) {
         // Load all related data
-        const [devisData, facturesData, projetsData, conversationsData, catalogueData] = await Promise.all([
+        const [devisData, facturesData, projetsData, conversationsData, catalogueData, commandesData, tarifsData] = await Promise.all([
           base44.entities.Devis.filter({ client_id: clientData.id }),
           base44.entities.Facture.filter({ client_id: clientData.id }),
           base44.entities.Projet.filter({ client_id: clientData.id }),
           base44.entities.ConversationClient.filter({ client_id: clientData.id }),
-          base44.entities.ProduitCatalogue.filter({ actif: true, visible_clients: true })
+          base44.entities.ProduitCatalogue.filter({ actif: true, visible_clients: true }),
+          base44.entities.Commande.filter({ client_id: clientData.id }),
+          base44.entities.TarifsClients.filter({ client_id: clientData.id })
         ]);
 
         setDevis(devisData);
@@ -97,6 +103,8 @@ export default function PortailClient() {
         setProjets(projetsData);
         setConversations(conversationsData);
         setProduitsCatalogue(catalogueData);
+        setCommandes(commandesData);
+        setTarifsClients(tarifsData);
       }
     } catch (e) {
       console.error('Error loading data:', e);
@@ -268,6 +276,21 @@ export default function PortailClient() {
   const facturesImpayees = factures.filter(f => f.statut !== 'payee').length;
   const projetsActifs = projets.filter(p => p.statut === 'en_cours').length;
 
+  const getPrixClient = (produit) => {
+    const tarif = tarifsClients.find(t => t.produit_id === produit.id);
+    
+    if (tarif) {
+      if (tarif.prix_client) return tarif.prix_client;
+      if (tarif.remise_pct) return produit.prix_unitaire * (1 - tarif.remise_pct / 100);
+    }
+    
+    if (client?.remise_globale_pct) {
+      return produit.prix_unitaire * (1 - client.remise_globale_pct / 100);
+    }
+    
+    return produit.prix_unitaire;
+  };
+
   // Filter catalogue
   const filteredCatalogue = produitsCatalogue.filter(p => {
     if (!catalogueSearch) return true;
@@ -347,29 +370,103 @@ export default function PortailClient() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="catalogue" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
+          <TabsTrigger value="commandes">Commandes</TabsTrigger>
           <TabsTrigger value="devis">Devis</TabsTrigger>
           <TabsTrigger value="factures">Factures</TabsTrigger>
           <TabsTrigger value="projets">Projets</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
 
+        {/* Commandes Tab */}
+        <TabsContent value="commandes" className="space-y-4">
+          {commandes.length === 0 ? (
+            <Card className="border-0 shadow-lg">
+              <CardContent className="py-16 text-center">
+                <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">Aucune commande pour le moment</p>
+              </CardContent>
+            </Card>
+          ) : (
+            commandes.map(cmd => (
+              <Card key={cmd.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-slate-900">{cmd.reference_commande}</h3>
+                        <Badge className={
+                          cmd.statut === 'livree' ? 'bg-green-100 text-green-700' :
+                          cmd.statut === 'prete' ? 'bg-emerald-100 text-emerald-700' :
+                          cmd.statut === 'en_production' ? 'bg-purple-100 text-purple-700' :
+                          cmd.statut === 'confirmee' ? 'bg-blue-100 text-blue-700' :
+                          cmd.statut === 'annulee' ? 'bg-rose-100 text-rose-700' :
+                          'bg-slate-100 text-slate-700'
+                        }>
+                          {cmd.statut}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-2">{cmd.type_prestation}</p>
+                      <p className="text-xs text-slate-400">
+                        Commandé le {moment(cmd.date_commande).format('DD/MM/YYYY')}
+                      </p>
+                      {cmd.date_livraison_prevue && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          📅 Livraison prévue: {moment(cmd.date_livraison_prevue).format('DD/MM/YYYY')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500">Total</p>
+                      <p className="text-lg font-bold text-slate-900">{formatMontant(cmd.montant_total)} F</p>
+                      {cmd.reste_a_payer > 0 && (
+                        <p className="text-xs text-amber-600">Reste: {formatMontant(cmd.reste_a_payer)} F</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {cmd.commentaire_client && (
+                    <div className="p-3 bg-blue-50 rounded-lg mb-3">
+                      <p className="text-sm text-slate-700">{cmd.commentaire_client}</p>
+                    </div>
+                  )}
+
+                  {cmd.historique_statuts && cmd.historique_statuts.length > 0 && (
+                    <div className="border-t pt-3">
+                      <HistoriqueCommande commande={cmd} />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
         {/* Catalogue Tab */}
         <TabsContent value="catalogue" className="space-y-4">
           <Card className="border-0 shadow-lg">
             <CardContent className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input
-                  placeholder="Rechercher un produit..."
-                  value={catalogueSearch}
-                  onChange={(e) => {
-                    setCatalogueSearch(e.target.value);
-                    setSelectedProduit(null);
-                  }}
-                  className="pl-10"
-                />
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    placeholder="Rechercher un produit..."
+                    value={catalogueSearch}
+                    onChange={(e) => {
+                      setCatalogueSearch(e.target.value);
+                      setSelectedProduit(null);
+                    }}
+                    className="pl-10"
+                  />
+                </div>
+                <Button 
+                  onClick={() => setShowCatalogueGenerator(true)}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Mon catalogue PDF
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -419,10 +516,15 @@ export default function PortailClient() {
                     
                     <div className="flex items-baseline gap-2 mb-3">
                       <p className="text-lg font-bold text-blue-600">
-                        {formatMontant(produit.prix_unitaire)} F
+                        {formatMontant(getPrixClient(produit))} F
                       </p>
                       {produit.prix_a_partir_de && (
                         <span className="text-xs text-slate-500">à partir de</span>
+                      )}
+                      {getPrixClient(produit) < produit.prix_unitaire && (
+                        <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                          Prix spécial
+                        </Badge>
                       )}
                     </div>
                     
@@ -761,6 +863,20 @@ export default function PortailClient() {
               loadData();
             }}
             onCancel={() => setShowDemandeForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Catalogue Generator Dialog */}
+      <Dialog open={showCatalogueGenerator} onOpenChange={setShowCatalogueGenerator}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Générer mon catalogue personnalisé</DialogTitle>
+          </DialogHeader>
+          <CatalogueGenerator
+            produits={produitsCatalogue}
+            selectedProduits={[]}
+            onClose={() => setShowCatalogueGenerator(false)}
           />
         </DialogContent>
       </Dialog>

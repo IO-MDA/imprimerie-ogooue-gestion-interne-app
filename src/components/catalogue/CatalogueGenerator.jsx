@@ -261,10 +261,10 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.text(prixText, textStartX, yPos + (cardHeight - 15));
           
           if (produit.delai_estime) {
-            pdf.setFontSize(7);
+            pdf.setFontSize(layoutConfig.fontSize - 0.5);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(100, 100, 100);
-            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + 37);
+            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + (cardHeight - 8));
           }
           
           yPos += cardHeight + 3;
