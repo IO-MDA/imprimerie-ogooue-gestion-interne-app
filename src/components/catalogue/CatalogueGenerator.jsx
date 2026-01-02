@@ -257,8 +257,9 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
           const prixFinal = getPrixClient(produit);
-          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(prixFinal || 0));
-          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
+          const prixValue = Math.round(prixFinal || 0);
+          const prix = prixValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (a partir de)' : ''}`;
           pdf.text(prixText, textStartX, yPos + (cardHeight - 15));
           
           if (produit.delai_estime) {
@@ -315,15 +316,16 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.rect(margin, yPos, contentWidth, cardHeight);
           
           // Product image placeholder (left side)
+          const imgSize = layoutConfig.imageSize;
           pdf.setFillColor(245, 245, 245);
-          pdf.rect(margin + 3, yPos + 3, 28, 28, 'F');
-          pdf.setFontSize(7);
+          pdf.rect(margin + 3, yPos + 3, imgSize, imgSize, 'F');
+          pdf.setFontSize(6);
           pdf.setTextColor(150, 150, 150);
-          pdf.text('PHOTO', margin + 17, yPos + 18, { align: 'center' });
+          pdf.text('PHOTO', margin + 3 + imgSize/2, yPos + imgSize/2 + 2, { align: 'center' });
           
           // Product details (right side)
-          const textStartX = margin + 34;
-          const textWidth = contentWidth - 37;
+          const textStartX = margin + imgSize + 7;
+          const textWidth = contentWidth - imgSize - 10;
           
           pdf.setTextColor(0, 0, 0);
           pdf.setFontSize(layoutConfig.titleFontSize);
@@ -341,8 +343,9 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
           const prixFinal = getPrixClient(produit);
-          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(prixFinal || 0));
-          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
+          const prixValue = Math.round(prixFinal || 0);
+          const prix = prixValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (a partir de)' : ''}`;
           pdf.text(prixText, textStartX, yPos + (cardHeight - 15));
           
           // Delivery time (small, subtle)
