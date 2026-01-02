@@ -40,8 +40,6 @@ export default function Objectifs() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(checkAndNotify, 60000); // Check every minute
-    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {

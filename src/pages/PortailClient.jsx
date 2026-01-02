@@ -108,19 +108,99 @@ export default function PortailClient() {
     );
   }
 
+  const handleCreateProfile = async (profileData) => {
+    try {
+      const newClient = await base44.entities.Client.create({
+        nom: profileData.nom,
+        email: user.email,
+        telephone: profileData.telephone,
+        adresse: profileData.adresse,
+        type: profileData.type || 'particulier'
+      });
+      setClient(newClient);
+      toast.success('Profil client créé avec succès');
+      loadData();
+    } catch (e) {
+      toast.error('Erreur lors de la création du profil');
+    }
+  };
+
   if (!client) {
+    const [profileForm, setProfileForm] = useState({
+      nom: user?.full_name || '',
+      telephone: '',
+      adresse: '',
+      type: 'particulier'
+    });
+
     return (
-      <div className="max-w-4xl mx-auto mt-12">
-        <Card className="border-0 shadow-lg">
-          <CardContent className="py-16 text-center">
-            <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Profil client introuvable</h2>
-            <p className="text-slate-600 mb-6">
-              Aucun compte client n'est associé à votre email ({user?.email}).
+      <div className="max-w-2xl mx-auto mt-12">
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <CardTitle className="text-center">
+              <Package className="w-12 h-12 mx-auto mb-3" />
+              Créez votre profil client
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <p className="text-slate-600 mb-6 text-center">
+              Bienvenue à l'Imprimerie OGOOUE ! Créez votre profil pour commencer à passer des commandes.
             </p>
-            <p className="text-sm text-slate-500">
-              Veuillez contacter l'Imprimerie OGOOUE pour créer votre profil client.
-            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Nom complet *</label>
+                <Input
+                  value={profileForm.nom}
+                  onChange={(e) => setProfileForm({...profileForm, nom: e.target.value})}
+                  placeholder="Votre nom ou raison sociale"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <Input value={user?.email} disabled className="bg-slate-100" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Téléphone *</label>
+                <Input
+                  value={profileForm.telephone}
+                  onChange={(e) => setProfileForm({...profileForm, telephone: e.target.value})}
+                  placeholder="+241 XX XX XX XX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Adresse</label>
+                <Input
+                  value={profileForm.adresse}
+                  onChange={(e) => setProfileForm({...profileForm, adresse: e.target.value})}
+                  placeholder="Votre adresse à Moanda"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Type de client</label>
+                <select
+                  value={profileForm.type}
+                  onChange={(e) => setProfileForm({...profileForm, type: e.target.value})}
+                  className="w-full p-2 border rounded-lg"
+                >
+                  <option value="particulier">Particulier</option>
+                  <option value="entreprise">Entreprise</option>
+                </select>
+              </div>
+
+              <Button
+                onClick={() => handleCreateProfile(profileForm)}
+                disabled={!profileForm.nom || !profileForm.telephone}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Créer mon profil
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
