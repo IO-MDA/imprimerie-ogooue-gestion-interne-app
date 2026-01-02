@@ -12,6 +12,7 @@ import Evenements from './pages/Evenements';
 import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
 import Mockups from './pages/Mockups';
+import Objectifs from './pages/Objectifs';
 import Parametres from './pages/Parametres';
 import Pointage from './pages/Pointage';
 import PortailClient from './pages/PortailClient';
@@ -20,7 +21,6 @@ import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Objectifs from './pages/Objectifs';
 import Travaux from './pages/Travaux';
 import __Layout from './Layout.jsx';
 
@@ -40,6 +40,7 @@ export const PAGES = {
     "Finances": Finances,
     "Messagerie": Messagerie,
     "Mockups": Mockups,
+    "Objectifs": Objectifs,
     "Parametres": Parametres,
     "Pointage": Pointage,
     "PortailClient": PortailClient,
@@ -48,7 +49,6 @@ export const PAGES = {
     "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Objectifs": Objectifs,
     "Travaux": Travaux,
 }
 

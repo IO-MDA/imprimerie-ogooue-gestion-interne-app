@@ -20,8 +20,10 @@ import {
   Package,
   Edit,
   Trash2,
-  PieChart
+  PieChart,
+  Sparkles
 } from 'lucide-react';
+import AnalyseFinanciereIA from '@/components/finances/AnalyseFinanciereIA.jsx';
 import { toast } from 'sonner';
 import moment from 'moment';
 
@@ -31,10 +33,12 @@ export default function Finances() {
   const [actionnaires, setActionnaires] = useState([]);
   const [investissements, setInvestissements] = useState([]);
   const [rapports, setRapports] = useState([]);
+  const [travaux, setTravaux] = useState([]);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('charges');
   const [showForm, setShowForm] = useState(false);
+  const [showIAAnalysis, setShowIAAnalysis] = useState(false);
   const [formType, setFormType] = useState('');
   const [editingItem, setEditingItem] = useState(null);
 
@@ -87,12 +91,14 @@ export default function Finances() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [chargesData, dettesData, actionnairesData, investData, rapportsData, userData] = await Promise.all([
+    const [chargesData, dettesData, actionnairesData, investData, rapportsData, avancesData, travauxData, userData] = await Promise.all([
       base44.entities.ChargeFixe.list(),
       base44.entities.Dette.list(),
       base44.entities.Actionnaire.list(),
       base44.entities.Investissement.list(),
       base44.entities.RapportJournalier.list('-date', 200),
+      base44.entities.Avance.list(),
+      base44.entities.Travail.list(),
       base44.auth.me()
     ]);
     setCharges(chargesData);
@@ -100,8 +106,34 @@ export default function Finances() {
     setActionnaires(actionnairesData);
     setInvestissements(investData);
     setRapports(rapportsData);
+    setTravaux(travauxData);
     setUser(userData);
     setIsLoading(false);
+    
+    // Calculate charges with advances for current month
+    calculateChargesWithAdvances(chargesData, avancesData);
+  };
+
+  const calculateChargesWithAdvances = (chargesData, avancesData) => {
+    const thisMonth = moment().format('YYYY-MM');
+    const updatedCharges = chargesData.map(charge => {
+      const avancesForCharge = avancesData.filter(a => 
+        a.charge_fixe_id === charge.id && 
+        a.mois_concerne === thisMonth &&
+        a.statut === 'versee'
+      );
+      const totalAvances = avancesForCharge.reduce((sum, a) => sum + (a.montant || 0), 0);
+      const resteAPayer = charge.montant_mensuel - totalAvances;
+      const statutPaiement = resteAPayer <= 0 ? 'paye' : totalAvances > 0 ? 'partiel' : 'en_attente';
+      
+      return {
+        ...charge,
+        totalAvances,
+        resteAPayer,
+        statutPaiement
+      };
+    });
+    setCharges(updatedCharges);
   };
 
   const calculateMensualite = (montant, taux, duree) => {
@@ -220,15 +252,20 @@ export default function Finances() {
     return echeances;
   };
 
-  // Calcul bénéfice mensuel
+  // Calcul bénéfice mensuel avec avances
   const thisMonth = moment().format('YYYY-MM');
   const monthRapports = rapports.filter(r => moment(r.date).format('YYYY-MM') === thisMonth);
   const recettesMois = monthRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
   const depensesMois = monthRapports.reduce((sum, r) => sum + (r.total_depenses || 0), 0);
-  const chargesMensuelles = charges.filter(c => c.active).reduce((sum, c) => sum + c.montant_mensuel, 0);
+  
+  // Charges restantes à payer (après déduction des avances)
+  const chargesRestantes = charges.filter(c => c.active).reduce((sum, c) => sum + (c.resteAPayer || c.montant_mensuel), 0);
   const remboursementsMois = dettes.filter(d => d.statut === 'en_cours').reduce((sum, d) => sum + (d.mensualite || 0), 0);
   const beneficeBrut = recettesMois - depensesMois;
-  const beneficeNet = beneficeBrut - chargesMensuelles - remboursementsMois;
+  const beneficeNet = beneficeBrut - chargesRestantes - remboursementsMois;
+  
+  const chargesMensuellesTotales = charges.filter(c => c.active).reduce((sum, c) => sum + c.montant_mensuel, 0);
+  const avancesPayeesMois = charges.filter(c => c.active).reduce((sum, c) => sum + (c.totalAvances || 0), 0);
 
   // Dividendes
   const totalParts = actionnaires.filter(a => a.actif).reduce((sum, a) => sum + a.parts, 0);
@@ -267,6 +304,13 @@ export default function Finances() {
           <h1 className="text-2xl font-bold text-slate-900">Gestion Financière</h1>
           <p className="text-slate-500">Charges, dettes, actionnaires et investissements</p>
         </div>
+        <Button 
+          onClick={() => setShowIAAnalysis(true)}
+          className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          Analyse IA
+        </Button>
       </div>
 
       {/* Résumé financier */}
@@ -288,7 +332,8 @@ export default function Finances() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-rose-600 font-medium">Charges mensuelles</p>
-                <p className="text-2xl font-bold text-rose-900">{chargesMensuelles.toLocaleString()} F</p>
+                <p className="text-2xl font-bold text-rose-900">{chargesMensuellesTotales.toLocaleString()} F</p>
+                <p className="text-xs text-rose-600 mt-1">Reste: {chargesRestantes.toLocaleString()} F</p>
               </div>
               <TrendingDown className="w-10 h-10 text-rose-600 opacity-50" />
             </div>
@@ -349,9 +394,27 @@ export default function Finances() {
                         <h4 className="font-semibold">{charge.libelle}</h4>
                         <Badge variant="outline">{charge.type}</Badge>
                         {!charge.active && <Badge variant="secondary">Inactive</Badge>}
+                        {charge.statutPaiement === 'paye' && <Badge className="bg-emerald-100 text-emerald-700">Payé</Badge>}
+                        {charge.statutPaiement === 'partiel' && <Badge className="bg-amber-100 text-amber-700">Partiel</Badge>}
                       </div>
                       <p className="text-sm text-slate-600">{charge.beneficiaire}</p>
                       <p className="text-sm text-slate-500">Depuis: {moment(charge.date_debut).format('DD/MM/YYYY')}</p>
+                      {charge.totalAvances > 0 && (
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-slate-500">Total</p>
+                            <p className="font-medium">{charge.montant_mensuel.toLocaleString()} F</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Avances</p>
+                            <p className="font-medium text-amber-600">{charge.totalAvances.toLocaleString()} F</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Reste</p>
+                            <p className="font-medium text-rose-600">{charge.resteAPayer.toLocaleString()} F</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <p className="text-xl font-bold text-rose-600">{charge.montant_mensuel.toLocaleString()} F/mois</p>
@@ -833,6 +896,21 @@ export default function Finances() {
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* IA Analysis Dialog */}
+      <Dialog open={showIAAnalysis} onOpenChange={setShowIAAnalysis}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Analyse Financière & Prévisions IA</DialogTitle>
+          </DialogHeader>
+          <AnalyseFinanciereIA 
+            rapports={rapports}
+            charges={charges}
+            dettes={dettes}
+            travaux={travaux}
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -114,14 +114,16 @@ export default function Travaux() {
           <p className="text-slate-500">Suivi des travaux Papeterie & Restaurant</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => setShowOptimisation(true)}
-            variant="outline"
-            className="border-violet-300 text-violet-600 hover:bg-violet-50"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Optimisation IA
-          </Button>
+          {availableProjects.length > 0 && (
+            <Button 
+              onClick={() => setShowOptimisation(true)}
+              variant="outline"
+              className="border-violet-300 text-violet-600 hover:bg-violet-50"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Analyse IA
+            </Button>
+          )}
           {(isAdmin || isManager) && (
             <Button 
               onClick={() => { setEditingTravail(null); setShowForm(true); }}
