@@ -58,7 +58,35 @@ export default function Pointage() {
   };
 
   const handlePointageAutomatique = async () => {
-    // Désactivé - les employés pointent manuellement maintenant
+    // Vérifie et crée un pointage automatique pour éviter anomalies
+    try {
+      const userData = await base44.auth.me();
+      if (!userData || userData.role === 'admin') return;
+      
+      const clients = await base44.entities.Client.filter({ user_id: userData.id });
+      if (clients.length > 0) return;
+
+      const today = moment().format('YYYY-MM-DD');
+      const pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id });
+      
+      const pointageToday = pointagesData.find(p => p.date === today);
+      
+      // Détecter anomalie : pointage en cours depuis plus de 12h
+      if (pointageToday && pointageToday.statut === 'en_cours') {
+        const heureEntree = moment(pointageToday.heure_entree, 'HH:mm');
+        const now = moment();
+        const heuresEcoules = now.diff(heureEntree, 'hours');
+        
+        if (heuresEcoules > 12) {
+          await base44.entities.Pointage.update(pointageToday.id, {
+            statut: 'anomalie',
+            commentaire: 'Sortie non enregistrée - durée excessive détectée'
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Erreur vérification pointage:', e);
+    }
   };
 
   const handleEntree = async () => {

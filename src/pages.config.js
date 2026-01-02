@@ -26,6 +26,8 @@ import RapportsJournaliers from './pages/RapportsJournaliers';
 import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
+import StatsPointage from './pages/StatsPointage';
+import Commandes from './pages/Commandes';
 import __Layout from './Layout.jsx';
 
 
@@ -58,6 +60,8 @@ export const PAGES = {
     "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
+    "StatsPointage": StatsPointage,
+    "Commandes": Commandes,
 }
 
 export const pagesConfig = {
