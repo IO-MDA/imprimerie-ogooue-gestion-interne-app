@@ -25,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import ProduitCatalogueForm from '@/components/catalogue/ProduitCatalogueForm';
 import CatalogueGenerator from '@/components/catalogue/CatalogueGenerator';
+import AnalyseVentesIA from '@/components/catalogue/AnalyseVentesIA';
 
 const CATEGORIES = [
   'Photos',
@@ -47,6 +48,7 @@ export default function Catalogue() {
   const [showGenerator, setShowGenerator] = useState(false);
   const [user, setUser] = useState(null);
   const [generatingCatalogue, setGeneratingCatalogue] = useState(false);
+  const [showAnalyseIA, setShowAnalyseIA] = useState(false);
   
   const isAdmin = user?.role === 'admin';
   
@@ -301,7 +303,7 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="border-0 shadow-lg">
           <CardContent className="p-4">
             <p className="text-sm text-slate-500">Total produits</p>
@@ -326,6 +328,20 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
             <p className="text-2xl font-bold text-purple-600">{selectedProduits.length}</p>
           </CardContent>
         </Card>
+        {isAdmin && (
+          <Card 
+            className="border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow bg-gradient-to-br from-emerald-50 to-teal-50"
+            onClick={() => setShowAnalyseIA(true)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <p className="text-sm text-slate-500">Analyse IA</p>
+              </div>
+              <p className="text-sm font-medium text-emerald-700">Optimiser ventes</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Filters */}
@@ -561,6 +577,16 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
             selectedProduits={selectedProduits}
             onClose={() => setShowGenerator(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Analyse IA Dialog */}
+      <Dialog open={showAnalyseIA} onOpenChange={setShowAnalyseIA}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Analyse IA des ventes</DialogTitle>
+          </DialogHeader>
+          <AnalyseVentesIA produits={produits} />
         </DialogContent>
       </Dialog>
     </div>

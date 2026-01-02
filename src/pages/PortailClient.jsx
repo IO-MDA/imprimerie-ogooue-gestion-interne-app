@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import DemandeClientForm from '@/components/portail/DemandeClientForm';
 import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
+import SuggestionsIA from '@/components/catalogue/SuggestionsIA';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -37,6 +38,7 @@ export default function PortailClient() {
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [produitsCatalogue, setProduitsCatalogue] = useState([]);
   const [catalogueSearch, setCatalogueSearch] = useState('');
+  const [selectedProduit, setSelectedProduit] = useState(null);
   const [profileForm, setProfileForm] = useState({
     nom: '',
     email: '',
@@ -330,12 +332,24 @@ export default function PortailClient() {
                 <Input
                   placeholder="Rechercher un produit..."
                   value={catalogueSearch}
-                  onChange={(e) => setCatalogueSearch(e.target.value)}
+                  onChange={(e) => {
+                    setCatalogueSearch(e.target.value);
+                    setSelectedProduit(null);
+                  }}
                   className="pl-10"
                 />
               </div>
             </CardContent>
           </Card>
+
+          {/* Suggestions IA si produit sélectionné */}
+          {selectedProduit && catalogueSearch && (
+            <SuggestionsIA 
+              produitActuel={selectedProduit}
+              tousLesProduits={produitsCatalogue}
+              clientId={client?.id}
+            />
+          )}
 
           {filteredCatalogue.length === 0 ? (
             <Card className="border-0 shadow-lg">
@@ -389,6 +403,7 @@ export default function PortailClient() {
                     <Button
                       className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
                       onClick={() => {
+                        setSelectedProduit(produit);
                         setShowDemandeForm(true);
                       }}
                     >
