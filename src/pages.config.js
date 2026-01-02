@@ -1,4 +1,5 @@
 import Annonces from './pages/Annonces';
+import Avances from './pages/Avances';
 import Bilans from './pages/Bilans';
 import CalendrierTaches from './pages/CalendrierTaches';
 import Catalogue from './pages/Catalogue';
@@ -12,19 +13,20 @@ import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
 import Mockups from './pages/Mockups';
 import Parametres from './pages/Parametres';
+import Pointage from './pages/Pointage';
 import PortailClient from './pages/PortailClient';
 import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
-import Pointage from './pages/Pointage';
-import Avances from './pages/Avances';
+import Objectifs from './pages/Objectifs';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Annonces": Annonces,
+    "Avances": Avances,
     "Bilans": Bilans,
     "CalendrierTaches": CalendrierTaches,
     "Catalogue": Catalogue,
@@ -38,14 +40,14 @@ export const PAGES = {
     "Messagerie": Messagerie,
     "Mockups": Mockups,
     "Parametres": Parametres,
+    "Pointage": Pointage,
     "PortailClient": PortailClient,
     "Projets": Projets,
     "Prospection": Prospection,
     "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
-    "Pointage": Pointage,
-    "Avances": Avances,
+    "Objectifs": Objectifs,
 }
 
 export const pagesConfig = {
