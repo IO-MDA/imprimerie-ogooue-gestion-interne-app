@@ -35,44 +35,64 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         return;
       }
 
-      // Create PDF
+      // Create PDF with professional layout
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPos = 20;
+      const margin = 15;
+      const contentWidth = pageWidth - (2 * margin);
+      let pageNumber = 1;
 
-      // Cover page with logo
+      // Helper function to add footer with logo and pagination
+      const addFooter = () => {
+        pdf.setFontSize(7);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text('IMPRIMERIE OGOOUE | Tel: +241 060 44 46 34 / 074 42 41 42 | imprimerieogooue@gmail.com', pageWidth / 2, pageHeight - 10, { align: 'center' });
+        pdf.text('RCCM: RG/FCV 2023A0407 | Carrefour Fina en face de Finam, Moanda - Gabon', pageWidth / 2, pageHeight - 6, { align: 'center' });
+        
+        // Page number
+        pdf.setFontSize(8);
+        pdf.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        pageNumber++;
+      };
+
+      // COVER PAGE
       pdf.setFillColor(0, 120, 215);
-      pdf.rect(0, 0, pageWidth, 80, 'F');
+      pdf.rect(0, 0, pageWidth, pageHeight / 2, 'F');
       
-      // Add logo
+      // Logo on cover (centered, not overlapping text)
       const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
       try {
-        pdf.addImage(logoUrl, 'PNG', pageWidth / 2 - 15, 15, 30, 30);
+        pdf.addImage(logoUrl, 'PNG', pageWidth / 2 - 20, 30, 40, 40);
       } catch (e) {
-        console.log('Logo loading error, continuing without logo');
+        console.log('Logo loading error');
       }
       
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(32);
+      pdf.setFontSize(36);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('IMPRIMERIE OGOOUÉ', pageWidth / 2, 55, { align: 'center' });
+      pdf.text('IMPRIMERIE OGOOUÉ', pageWidth / 2, 85, { align: 'center' });
       
-      pdf.setFontSize(16);
+      pdf.setFontSize(18);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Catalogue Produits & Services', pageWidth / 2, 55, { align: 'center' });
+      pdf.text('Catalogue Produits & Services', pageWidth / 2, 100, { align: 'center' });
+      
+      // Category subtitle on white background
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, pageHeight / 2, pageWidth, pageHeight / 2, 'F');
       
       pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(12);
+      pdf.setFontSize(14);
       const titleText = generationType === 'selection' ? 'Sélection personnalisée' :
                         generationType === 'categorie' ? `Catégorie: ${selectedCategory}` :
                         'Catalogue complet';
-      pdf.text(titleText, pageWidth / 2, 100, { align: 'center' });
+      pdf.text(titleText, pageWidth / 2, pageHeight / 2 + 20, { align: 'center' });
 
       // Contact info
-      pdf.setFontSize(10);
-      pdf.text('Tel: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, 120, { align: 'center' });
-      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, 128, { align: 'center' });
+      pdf.setFontSize(11);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text('Tél: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, pageHeight / 2 + 40, { align: 'center' });
+      pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, pageHeight / 2 + 48, { align: 'center' });
 
       // Group products by category
       const produitsParCategorie = {};
@@ -83,105 +103,95 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         produitsParCategorie[p.categorie].push(p);
       });
 
-      // Table of contents
-      pdf.addPage();
-      yPos = 20;
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('SOMMAIRE', pageWidth / 2, yPos, { align: 'center' });
+      // Products by category (no table of contents, direct to products)
+      let isFirstCategory = true;
       
-      yPos = 40;
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      
-      Object.keys(produitsParCategorie).forEach((cat, index) => {
-        pdf.text(`${index + 1}. ${cat}`, 20, yPos);
-        pdf.text(`${produitsParCategorie[cat].length} produits`, pageWidth - 40, yPos, { align: 'right' });
-        yPos += 10;
-        
-        if (yPos > pageHeight - 20) {
-          pdf.addPage();
-          yPos = 20;
-        }
-      });
-
-      // Products by category
       for (const [categorie, produitsCategorie] of Object.entries(produitsParCategorie)) {
-        pdf.addPage();
-        yPos = 20;
+        if (!isFirstCategory) {
+          pdf.addPage();
+        } else {
+          pdf.addPage();
+        }
+        isFirstCategory = false;
         
-        // Category header
+        let yPos = margin + 5;
+        
+        // Category header (compact)
         pdf.setFillColor(0, 120, 215);
-        pdf.rect(0, yPos - 8, pageWidth, 15, 'F');
+        pdf.rect(0, yPos, pageWidth, 12, 'F');
         pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(16);
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(categorie, pageWidth / 2, yPos, { align: 'center' });
+        pdf.text(categorie, pageWidth / 2, yPos + 8, { align: 'center' });
         
-        yPos = 45;
+        yPos += 20;
         
-        for (const produit of produitsCategorie) {
-          // Check if we need a new page
-          if (yPos > pageHeight - 60) {
+        // Products in optimized grid
+        for (let i = 0; i < produitsCategorie.length; i++) {
+          const produit = produitsCategorie[i];
+          
+          // Calculate product card height
+          const cardHeight = 45;
+          
+          // Check if we need a new page (leave space for footer)
+          if (yPos + cardHeight > pageHeight - 25) {
+            addFooter();
             pdf.addPage();
-            yPos = 20;
+            yPos = margin + 5;
           }
           
-          // Product box
-          pdf.setDrawColor(200, 200, 200);
-          pdf.setLineWidth(0.5);
-          pdf.rect(15, yPos - 5, pageWidth - 30, 50);
+          // Product card with border
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.3);
+          pdf.rect(margin, yPos, contentWidth, cardHeight);
           
-          // Product image placeholder
-          pdf.setFillColor(240, 240, 240);
-          pdf.rect(20, yPos, 30, 30, 'F');
-          pdf.setFontSize(8);
+          // Product image placeholder (left side)
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(margin + 3, yPos + 3, 28, 28, 'F');
+          pdf.setFontSize(7);
           pdf.setTextColor(150, 150, 150);
-          pdf.text('PHOTO', 35, yPos + 16, { align: 'center' });
+          pdf.text('PHOTO', margin + 17, yPos + 18, { align: 'center' });
           
-          // Product details
-          const textStartX = produit.photos?.length > 0 ? 55 : 20;
+          // Product details (right side)
+          const textStartX = margin + 34;
+          const textWidth = contentWidth - 37;
+          
           pdf.setTextColor(0, 0, 0);
-          pdf.setFontSize(12);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(produit.nom, textStartX, yPos + 5);
-          
-          pdf.setFontSize(9);
-          pdf.setFont('helvetica', 'normal');
-          
-          const descLines = pdf.splitTextToSize(produit.description_courte || '', pageWidth - textStartX - 25);
-          pdf.text(descLines.slice(0, 2), textStartX, yPos + 12);
-          
-          // Price
           pdf.setFontSize(11);
           pdf.setFont('helvetica', 'bold');
+          pdf.text(produit.nom, textStartX, yPos + 8);
+          
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          
+          const descLines = pdf.splitTextToSize(produit.description_courte || '', textWidth);
+          pdf.text(descLines.slice(0, 2), textStartX, yPos + 14);
+          
+          // Price (prominent)
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(0, 120, 215);
-          const prix = String(Math.round(produit.prix_unitaire || 0));
-          const prixText = prix + ' FCFA' + (produit.prix_a_partir_de ? ' (a partir de)' : '');
+          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(produit.prix_unitaire || 0));
+          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
           pdf.text(prixText, textStartX, yPos + 30);
           
-          // Delivery time
+          // Delivery time (small, subtle)
           if (produit.delai_estime) {
-            pdf.setFontSize(8);
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(100, 100, 100);
             pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + 37);
           }
           
-          yPos += 55;
+          yPos += cardHeight + 3;
         }
+        
+        // Footer on each page
+        addFooter();
       }
 
-      // Footer on last page
-      pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text('RCCM : RG/FCV 2023A0407 | NIF : 256598U', pageWidth / 2, pageHeight - 20, { align: 'center' });
-      pdf.text('Siege social : Carrefour Fina en face de Finam Moanda - Gabon', pageWidth / 2, pageHeight - 15, { align: 'center' });
-      pdf.text('Tel : 060 44 46 34 / 074 42 41 42 | Email : imprimerieogooue@gmail.com', pageWidth / 2, pageHeight - 10, { align: 'center' });
-
       // Save PDF
-      const fileName = `Catalogue_${generationType === 'selection' ? 'Selection' : 
-                                     generationType === 'categorie' ? selectedCategory.replace(/ /g, '_') : 
-                                     'Complet'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `Catalogue_Impression_&_Saisie_${new Date().toISOString().split('T')[0]}.pdf`;
       
       pdf.save(fileName);
       
