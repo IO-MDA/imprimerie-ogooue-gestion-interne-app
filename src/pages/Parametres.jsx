@@ -465,15 +465,24 @@ export default function Parametres() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">Opérateur</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="user">Employé/Opérateur</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-slate-500 mt-1">
                 {inviteRole === 'admin' 
-                  ? 'Les administrateurs peuvent gérer les utilisateurs et approuver les modifications'
-                  : 'Les opérateurs peuvent créer et soumettre des rapports'}
+                  ? 'Accès complet à toutes les fonctionnalités et paramètres'
+                  : inviteRole === 'manager'
+                  ? 'Accès aux rapports et gestion d\'équipe'
+                  : 'Accès limité aux opérations quotidiennes (pointage, rapports)'}
               </p>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Pour inviter un <strong>client</strong>, utilisez la page d'inscription client publique.
+                  Les clients ne doivent pas être invités comme employés.
+                </p>
+              </div>
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setShowInvite(false)}>

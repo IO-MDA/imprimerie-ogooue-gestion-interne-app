@@ -58,13 +58,20 @@ export default function Layout({ children, currentPageName }) {
       const clients = await base44.entities.Client.filter({ user_id: userData.id });
       if (clients.length > 0) {
         setClient(clients[0]);
-        // Seuls les non-admins sont considérés comme clients purs
+        // Seuls les non-admins/managers sont considérés comme clients purs
         if (userData.role !== 'admin' && userData.role !== 'manager') {
           setIsClient(true);
           // Rediriger vers le portail client si pas déjà sur cette page
-          if (currentPageName !== 'PortailClient') {
+          if (currentPageName !== 'PortailClient' && currentPageName !== 'InscriptionClient') {
             window.location.href = '/PortailClient';
           }
+        }
+      } else if (userData.role === 'user' && currentPageName !== 'InscriptionClient' && currentPageName !== 'PortailClient') {
+        // Si c'est un user sans profil client et pas sur la page d'inscription, vérifier s'il doit créer son profil
+        // Ne rediriger que si on est sûr que c'est un client (pas un employé)
+        const isEmployee = ['Pointage', 'StatsPointage', 'RapportsJournaliers'].includes(currentPageName);
+        if (!isEmployee) {
+          window.location.href = '/PortailClient';
         }
       }
     } catch (e) {
