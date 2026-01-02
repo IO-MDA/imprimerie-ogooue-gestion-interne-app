@@ -23,6 +23,8 @@ import RapportsJournaliers from './pages/RapportsJournaliers';
 import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
+import DemandesRH from './pages/DemandesRH';
+import ModelesDocuments from './pages/ModelesDocuments';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +54,8 @@ export const PAGES = {
     "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
+    "DemandesRH": DemandesRH,
+    "ModelesDocuments": ModelesDocuments,
 }
 
 export const pagesConfig = {
