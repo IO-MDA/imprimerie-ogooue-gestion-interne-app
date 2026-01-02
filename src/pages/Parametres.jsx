@@ -57,13 +57,25 @@ export default function Parametres() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [usersData, servicesData, reseauxData, userData] = await Promise.all([
+    const [usersData, servicesData, reseauxData, userData, clientsData] = await Promise.all([
       base44.entities.User.list(),
       base44.entities.Service.list(),
       base44.entities.ReseauSocial.list(),
-      base44.auth.me()
+      base44.auth.me(),
+      base44.entities.Client.list()
     ]);
-    setUsers(usersData);
+    
+    // Enrichir les utilisateurs avec les infos clients
+    const enrichedUsers = usersData.map(u => {
+      const clientProfile = clientsData.find(c => c.user_id === u.id);
+      return {
+        ...u,
+        isClient: !!clientProfile,
+        clientProfile
+      };
+    });
+    
+    setUsers(enrichedUsers);
     setServices(servicesData);
     setReseaux(reseauxData);
     setUser(userData);
@@ -312,14 +324,21 @@ export default function Parametres() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={
-                          u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
-                          u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 
-                          'bg-slate-100 text-slate-700'
-                        }>
-                          <Shield className="w-3 h-3 mr-1" />
-                          {u.role === 'admin' ? 'Administrateur' : u.role === 'manager' ? 'Manager' : 'Employé'}
-                        </Badge>
+                        {u.isClient ? (
+                          <Badge className="bg-green-100 text-green-700">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Client
+                          </Badge>
+                        ) : (
+                          <Badge className={
+                            u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                            u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 
+                            'bg-slate-100 text-slate-700'
+                          }>
+                            <Shield className="w-3 h-3 mr-1" />
+                            {u.role === 'admin' ? 'Administrateur' : u.role === 'manager' ? 'Manager' : 'Employé'}
+                          </Badge>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
