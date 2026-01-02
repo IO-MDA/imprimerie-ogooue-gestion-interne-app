@@ -21,7 +21,8 @@ export default function Travaux() {
   const [showForm, setShowForm] = useState(false);
   const [showOptimisation, setShowOptimisation] = useState(false);
   const [editingTravail, setEditingTravail] = useState(null);
-  const [activeTab, setActiveTab] = useState('papeterie');
+  const [activeTab, setActiveTab] = useState('');
+  const [availableProjects, setAvailableProjects] = useState([]);
   const [activeView, setActiveView] = useState('liste');
 
   useEffect(() => {
@@ -37,6 +38,13 @@ export default function Travaux() {
       ]);
       setTravaux(travauxData);
       setUser(userData);
+      
+      // Extract unique projects
+      const projects = [...new Set(travauxData.map(t => t.projet))].filter(Boolean);
+      setAvailableProjects(projects);
+      if (projects.length > 0 && !activeTab) {
+        setActiveTab(projects[0]);
+      }
     } catch (e) {
       console.error('Error loading data:', e);
     } finally {
@@ -126,16 +134,28 @@ export default function Travaux() {
         </div>
       </div>
 
+      {availableProjects.length === 0 ? (
+        <Card className="border-0 shadow-lg">
+          <CardContent className="py-16 text-center">
+            <HardHat className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500 mb-4">Aucun projet de travaux enregistré</p>
+            {(isAdmin || isManager) && (
+              <Button onClick={() => { setEditingTravail(null); setShowForm(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Créer le premier projet
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-100">
-          <TabsTrigger value="papeterie" className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Papeterie Ogooué
-          </TabsTrigger>
-          <TabsTrigger value="restaurant" className="flex items-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" />
-            Restaurant Ogooué
-          </TabsTrigger>
+        <TabsList className="bg-slate-100 flex-wrap">
+          {availableProjects.map(projet => (
+            <TabsTrigger key={projet} value={projet} className="flex items-center gap-2">
+              <HardHat className="w-4 h-4" />
+              {projet}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6 space-y-6">
@@ -232,6 +252,7 @@ export default function Travaux() {
           )}
         </TabsContent>
       </Tabs>
+      )}
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>

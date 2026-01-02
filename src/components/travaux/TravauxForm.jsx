@@ -5,12 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from '@/api/base44Client';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TravauxForm({ travail, defaultProjet, onSave, onCancel }) {
   const [formData, setFormData] = useState(travail || {
-    projet: defaultProjet || 'papeterie',
+    projet: defaultProjet || '',
     date: new Date().toISOString().split('T')[0],
     type_travail: 'construction',
     description: '',
@@ -23,7 +23,8 @@ export default function TravauxForm({ travail, defaultProjet, onSave, onCancel }
     responsable: '',
     notes: '',
     priorite: 'normale',
-    date_prevue_fin: ''
+    date_prevue_fin: '',
+    jalons: []
   });
   const [uploading, setUploading] = useState(false);
 
@@ -58,15 +59,13 @@ export default function TravauxForm({ travail, defaultProjet, onSave, onCancel }
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Projet *</Label>
-          <Select value={formData.projet} onValueChange={(v) => setFormData({...formData, projet: v})}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="papeterie">Papeterie Ogooué</SelectItem>
-              <SelectItem value="restaurant">Restaurant Ogooué</SelectItem>
-            </SelectContent>
-          </Select>
+          <Input
+            value={formData.projet}
+            onChange={(e) => setFormData({...formData, projet: e.target.value})}
+            placeholder="Ex: Papeterie Ogooué, Restaurant Ogooué..."
+            required
+          />
+          <p className="text-xs text-slate-500 mt-1">Nom libre du projet</p>
         </div>
 
         <div>
@@ -238,6 +237,59 @@ export default function TravauxForm({ travail, defaultProjet, onSave, onCancel }
           onChange={(e) => setFormData({...formData, notes: e.target.value})}
           rows={3}
         />
+      </div>
+
+      <div>
+        <Label>Jalons du projet</Label>
+        <div className="space-y-2 mt-2">
+          {formData.jalons?.map((jalon, idx) => (
+            <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded">
+              <Input
+                value={jalon.nom}
+                onChange={(e) => {
+                  const newJalons = [...formData.jalons];
+                  newJalons[idx].nom = e.target.value;
+                  setFormData({...formData, jalons: newJalons});
+                }}
+                placeholder="Nom du jalon"
+                className="flex-1"
+              />
+              <Input
+                type="date"
+                value={jalon.date_prevue || ''}
+                onChange={(e) => {
+                  const newJalons = [...formData.jalons];
+                  newJalons[idx].date_prevue = e.target.value;
+                  setFormData({...formData, jalons: newJalons});
+                }}
+                className="w-40"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const newJalons = formData.jalons.filter((_, i) => i !== idx);
+                  setFormData({...formData, jalons: newJalons});
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setFormData({
+              ...formData,
+              jalons: [...(formData.jalons || []), { nom: '', date_prevue: '', statut: 'en_attente' }]
+            })}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter un jalon
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

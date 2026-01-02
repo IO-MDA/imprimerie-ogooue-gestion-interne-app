@@ -59,11 +59,21 @@ export default function Avances() {
 
   const handleSave = async () => {
     try {
+      // Find matching ChargeFixe
+      let chargeFixeId = formData.charge_fixe_id;
+      if (!chargeFixeId && formData.beneficiaire) {
+        const matchingCharge = chargesFixes.find(c => 
+          c.beneficiaire === formData.beneficiaire && c.active
+        );
+        chargeFixeId = matchingCharge?.id;
+      }
+
       await base44.entities.Avance.create({
         ...formData,
-        montant: parseFloat(formData.montant)
+        montant: parseFloat(formData.montant),
+        charge_fixe_id: chargeFixeId
       });
-      toast.success('Avance enregistrée');
+      toast.success('Avance enregistrée et synchronisée avec les charges');
       setShowForm(false);
       setFormData({
         type_avance: 'salaire',
@@ -84,10 +94,15 @@ export default function Avances() {
   const handleUserSelect = (userId) => {
     const selectedUser = users.find(u => u.id === userId);
     if (selectedUser) {
+      // Find matching charge fixe for this user
+      const matchingCharge = chargesFixes.find(c => 
+        c.beneficiaire === selectedUser.full_name && c.active && c.type === 'salaire'
+      );
       setFormData({
         ...formData,
         beneficiaire: selectedUser.full_name,
-        beneficiaire_email: selectedUser.email
+        beneficiaire_email: selectedUser.email,
+        charge_fixe_id: matchingCharge?.id || ''
       });
     }
   };
@@ -319,11 +334,35 @@ export default function Avances() {
             {formData.type_avance !== 'salaire' && (
               <>
                 <div>
-                  <Label>Bénéficiaire</Label>
-                  <Input
-                    value={formData.beneficiaire}
-                    onChange={(e) => setFormData({...formData, beneficiaire: e.target.value})}
-                  />
+                  <Label>Bénéficiaire *</Label>
+                  {formData.type_avance === 'loyer' ? (
+                    <Select 
+                      value={formData.beneficiaire} 
+                      onValueChange={(v) => {
+                        const charge = chargesFixes.find(c => c.beneficiaire === v && c.type === 'loyer');
+                        setFormData({
+                          ...formData, 
+                          beneficiaire: v,
+                          charge_fixe_id: charge?.id || ''
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le bailleur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {chargesFixes.filter(c => c.type === 'loyer' && c.active).map(c => (
+                          <SelectItem key={c.id} value={c.beneficiaire}>{c.beneficiaire}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={formData.beneficiaire}
+                      onChange={(e) => setFormData({...formData, beneficiaire: e.target.value})}
+                      required
+                    />
+                  )}
                 </div>
                 <div>
                   <Label>Email</Label>
