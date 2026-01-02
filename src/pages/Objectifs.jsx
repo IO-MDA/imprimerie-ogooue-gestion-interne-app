@@ -53,49 +53,46 @@ export default function Objectifs() {
         base44.entities.User.list(),
         base44.auth.me()
       ]);
-      setObjectifs(objectifsData);
+      
+      // Calculate real data without updating database
+      const objectifsWithData = objectifsData.map(objectif => {
+        const filteredRapports = rapportsData.filter(r => {
+          if (objectif.type === 'mensuel') {
+            return moment(r.date).format('YYYY-MM') === objectif.periode;
+          } else {
+            return moment(r.date).format('YYYY') === objectif.periode;
+          }
+        });
+
+        const recettes = filteredRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
+        const benefice = filteredRapports.reduce((sum, r) => sum + ((r.total_recettes || 0) - (r.total_depenses || 0)), 0);
+        
+        let statut = 'en_cours';
+        if (objectif.objectif_recettes && recettes >= objectif.objectif_recettes) {
+          statut = 'atteint';
+        } else if (moment().isAfter(moment(objectif.periode, 'YYYY-MM').endOf('month'))) {
+          statut = 'echoue';
+        } else if (recettes < objectif.objectif_recettes * 0.5 && moment().date() > 15) {
+          statut = 'en_retard';
+        }
+
+        return {
+          ...objectif,
+          recettes_reelles: recettes,
+          benefice_reel: benefice,
+          statut
+        };
+      });
+      
+      setObjectifs(objectifsWithData);
       setRapports(rapportsData);
       setUsers(usersData);
       setUser(userData);
-      
-      // Update objectifs with real data
-      updateObjectifsWithRealData(objectifsData, rapportsData);
     } catch (e) {
       console.error('Error loading data:', e);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const updateObjectifsWithRealData = async (objectifs, rapports) => {
-    for (const objectif of objectifs) {
-      const filteredRapports = rapports.filter(r => {
-        if (objectif.type === 'mensuel') {
-          return moment(r.date).format('YYYY-MM') === objectif.periode;
-        } else {
-          return moment(r.date).format('YYYY') === objectif.periode;
-        }
-      });
-
-      const recettes = filteredRapports.reduce((sum, r) => sum + (r.total_recettes || 0), 0);
-      const benefice = filteredRapports.reduce((sum, r) => sum + ((r.total_recettes || 0) - (r.total_depenses || 0)), 0);
-      
-      let statut = 'en_cours';
-      if (objectif.objectif_recettes && recettes >= objectif.objectif_recettes) {
-        statut = 'atteint';
-      } else if (moment().isAfter(moment(objectif.periode, 'YYYY-MM').endOf('month'))) {
-        statut = 'echoue';
-      } else if (recettes < objectif.objectif_recettes * 0.5 && moment().date() > 15) {
-        statut = 'en_retard';
-      }
-
-      await base44.entities.Objectif.update(objectif.id, {
-        recettes_reelles: recettes,
-        benefice_reel: benefice,
-        statut
-      });
-    }
-    loadData();
   };
 
   const checkAndNotify = async () => {

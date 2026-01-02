@@ -21,6 +21,7 @@ import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
 import Taches from './pages/Taches';
 import Objectifs from './pages/Objectifs';
+import Travaux from './pages/Travaux';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "RapportsJournaliers": RapportsJournaliers,
     "Taches": Taches,
     "Objectifs": Objectifs,
+    "Travaux": Travaux,
 }
 
 export const pagesConfig = {

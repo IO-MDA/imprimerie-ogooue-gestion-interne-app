@@ -20,7 +20,10 @@ import {
   Printer,
   Clock,
   Megaphone,
-  Target
+  Target,
+  BarChart3,
+  PieChart,
+  HardHat
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,10 +87,11 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin', 'manager'] },
         { name: 'Calendrier tâches', href: 'CalendrierTaches', icon: LayoutDashboard, roles: ['admin', 'manager'] },
         { name: 'Devis & Factures', href: 'DevisFactures', icon: Receipt, roles: ['admin', 'manager'] },
-        { name: 'Rapports & Analyses', href: 'Rapports', icon: FileText, roles: ['admin', 'manager'] },
-        { name: 'Bilans & Analyses', href: 'Bilans', icon: FileText, roles: ['admin'] },
+        { name: 'Rapports & Analyses', href: 'Rapports', icon: BarChart3, roles: ['admin', 'manager'] },
+        { name: 'Bilans & Comptabilité', href: 'Bilans', icon: PieChart, roles: ['admin'] },
         { name: 'Finances', href: 'Finances', icon: Receipt, roles: ['admin'] },
         { name: 'Avances & Restes à payer', href: 'Avances', icon: Receipt, roles: ['admin', 'manager'] },
+        { name: 'Travaux Groupe Ogooué', href: 'Travaux', icon: HardHat, roles: ['admin', 'manager'] },
         { name: 'Mockups IA', href: 'Mockups', icon: Printer, roles: ['admin', 'manager'] },
         { name: 'Prospection', href: 'Prospection', icon: Users, roles: ['admin', 'manager'] },
         { 
