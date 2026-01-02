@@ -16,6 +16,7 @@ import {
   XCircle
 } from 'lucide-react';
 import RoleProtection from '@/components/auth/RoleProtection';
+import RapportFinancierRH from '@/components/rh/RapportFinancierRH';
 import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -230,10 +231,11 @@ export default function TableauBordRH() {
 
         {/* Tabs */}
         <Tabs defaultValue="vue-ensemble" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="vue-ensemble">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="pointages">Pointages</TabsTrigger>
             <TabsTrigger value="salaires">Salaires & Avances</TabsTrigger>
+            <TabsTrigger value="rapports">Rapports Financiers</TabsTrigger>
             <TabsTrigger value="demandes">Demandes</TabsTrigger>
           </TabsList>
 
@@ -431,6 +433,11 @@ export default function TableauBordRH() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Rapports Financiers */}
+          <TabsContent value="rapports" className="space-y-4">
+            <RapportFinancierRH selectedMonth={selectedMonth} />
           </TabsContent>
 
           {/* Demandes */}

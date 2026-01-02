@@ -41,6 +41,8 @@ export default function PortailClient() {
   const [produitsCatalogue, setProduitsCatalogue] = useState([]);
   const [catalogueSearch, setCatalogueSearch] = useState('');
   const [selectedProduit, setSelectedProduit] = useState(null);
+  const [estimations, setEstimations] = useState({});
+  const [loadingEstimation, setLoadingEstimation] = useState({});
   const [profileForm, setProfileForm] = useState({
     nom: '',
     email: '',
@@ -136,6 +138,22 @@ export default function PortailClient() {
   const downloadDocument = async (doc, type) => {
     toast.info('Génération du PDF...');
     // PDF generation would be handled here
+  };
+
+  const chargerEstimation = async (factureId) => {
+    if (estimations[factureId]) return; // Déjà chargé
+
+    setLoadingEstimation(prev => ({ ...prev, [factureId]: true }));
+    try {
+      const response = await base44.functions.invoke('estimerDelaiCommande', { factureId });
+      if (response.data.success) {
+        setEstimations(prev => ({ ...prev, [factureId]: response.data.estimation }));
+      }
+    } catch (e) {
+      console.error('Erreur estimation:', e);
+    } finally {
+      setLoadingEstimation(prev => ({ ...prev, [factureId]: false }));
+    }
   };
 
   if (isLoading) {
@@ -498,61 +516,130 @@ export default function PortailClient() {
               </CardContent>
             </Card>
           ) : (
-            factures.map(f => (
-              <Card key={f.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-slate-900">
-                          Facture #{f.numero}
-                        </h3>
-                        <Badge className={getStatusColor(f.statut)}>
-                          {f.statut === 'payee' ? 'Payée' : f.statut}
-                        </Badge>
-                        {f.statut_commande && (
-                          <Badge className={getStatutCommandeConfig(f.statut_commande).color}>
-                            {getStatutCommandeConfig(f.statut_commande).label}
+            factures.map(f => {
+              const estimation = estimations[f.id];
+              const isLoading = loadingEstimation[f.id];
+
+              return (
+                <Card key={f.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-slate-900">
+                            Facture #{f.numero}
+                          </h3>
+                          <Badge className={getStatusColor(f.statut)}>
+                            {f.statut === 'payee' ? 'Payée' : f.statut}
                           </Badge>
-                        )}
+                          {f.statut_commande && (
+                            <Badge className={getStatutCommandeConfig(f.statut_commande).color}>
+                              {getStatutCommandeConfig(f.statut_commande).label}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-600 mb-3">
+                          Date: {moment(f.date).format('DD/MM/YYYY')}
+                          {f.date_echeance && (
+                            <span className="ml-2">
+                              • Échéance: {moment(f.date_echeance).format('DD/MM/YYYY')}
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <div className="text-sm text-slate-500">
+                            {f.lignes?.length || 0} article(s)
+                          </div>
+                          <div className="text-sm font-semibold text-slate-900">
+                            Total: {formatMontant(f.total || 0)} F
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-600 mb-3">
-                        Date: {moment(f.date).format('DD/MM/YYYY')}
-                        {f.date_echeance && (
-                          <span className="ml-2">
-                            • Échéance: {moment(f.date_echeance).format('DD/MM/YYYY')}
-                          </span>
-                        )}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <div className="text-sm text-slate-500">
-                          {f.lignes?.length || 0} article(s)
-                        </div>
-                        <div className="text-sm font-semibold text-slate-900">
-                          Total: {formatMontant(f.total || 0)} F
-                        </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => viewDocument(f)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadDocument(f, 'facture')}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => viewDocument(f)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadDocument(f, 'facture')}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+
+                    {/* Estimation de délai IA */}
+                    {f.statut_commande && f.statut_commande !== 'livree' && f.statut_commande !== 'annulee' && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                        {!estimation && !isLoading && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => chargerEstimation(f.id)}
+                            className="text-blue-600 border-blue-200"
+                          >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Estimer le délai de livraison
+                          </Button>
+                        )}
+
+                        {isLoading && (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm">Analyse en cours...</span>
+                          </div>
+                        )}
+
+                        {estimation && (
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-semibold text-slate-900 mb-1">
+                                  📦 Livraison estimée : {moment(estimation.date_livraison_estimee).format('DD/MM/YYYY')}
+                                </p>
+                                <p className="text-sm text-slate-600">
+                                  Délai estimé : {estimation.delai_jours} jour{estimation.delai_jours > 1 ? 's' : ''}
+                                </p>
+                              </div>
+                              <Badge className={
+                                estimation.niveau_confiance === 'haute' ? 'bg-emerald-100 text-emerald-700' :
+                                estimation.niveau_confiance === 'moyenne' ? 'bg-amber-100 text-amber-700' :
+                                'bg-slate-100 text-slate-700'
+                              }>
+                                Confiance {estimation.niveau_confiance}
+                              </Badge>
+                            </div>
+
+                            {estimation.conseil_client && (
+                              <p className="text-sm text-blue-700 italic">
+                                💡 {estimation.conseil_client}
+                              </p>
+                            )}
+
+                            {estimation.etapes && estimation.etapes.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                <p className="text-xs font-medium text-slate-600">Étapes estimées :</p>
+                                {estimation.etapes.map((etape, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                                    <span>{etape.nom} ({etape.delai_jours}j)</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </TabsContent>
 
