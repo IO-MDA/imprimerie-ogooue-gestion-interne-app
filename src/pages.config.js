@@ -29,6 +29,7 @@ import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
 import PortailClient from './pages/PortailClient';
+import InscriptionClient from './pages/InscriptionClient';
 import __Layout from './Layout.jsx';
 
 
@@ -64,6 +65,7 @@ export const PAGES = {
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
     "PortailClient": PortailClient,
+    "InscriptionClient": InscriptionClient,
 }
 
 export const pagesConfig = {
