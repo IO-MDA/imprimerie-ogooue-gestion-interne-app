@@ -31,6 +31,7 @@ import WhatsAppButton from '@/components/client/WhatsAppButton';
 import DemandeForm from '@/components/client/DemandeForm';
 import TimelineStatut from '@/components/client/TimelineStatut';
 import ClientFooter from '@/components/client/ClientFooter';
+import ChatbotIA from '@/components/client/ChatbotIA';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -299,6 +300,14 @@ export default function PortailClient() {
 
       {/* WhatsApp Button */}
       <WhatsAppButton />
+
+      {/* Chatbot IA */}
+      <ChatbotIA 
+        client={client}
+        commandes={commandes}
+        demandes={demandes}
+        factures={factures}
+      />
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6 space-y-6">
