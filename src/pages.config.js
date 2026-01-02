@@ -7,11 +7,13 @@ import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import DemandeModification from './pages/DemandeModification';
 import DemandesModification from './pages/DemandesModification';
+import DemandesRH from './pages/DemandesRH';
 import DevisFactures from './pages/DevisFactures';
 import Evenements from './pages/Evenements';
 import Finances from './pages/Finances';
 import Messagerie from './pages/Messagerie';
 import Mockups from './pages/Mockups';
+import ModelesDocuments from './pages/ModelesDocuments';
 import Objectifs from './pages/Objectifs';
 import Parametres from './pages/Parametres';
 import Pointage from './pages/Pointage';
@@ -23,8 +25,6 @@ import RapportsJournaliers from './pages/RapportsJournaliers';
 import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
-import DemandesRH from './pages/DemandesRH';
-import ModelesDocuments from './pages/ModelesDocuments';
 import PerformanceEmployes from './pages/PerformanceEmployes';
 import __Layout from './Layout.jsx';
 
@@ -39,11 +39,13 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "DemandeModification": DemandeModification,
     "DemandesModification": DemandesModification,
+    "DemandesRH": DemandesRH,
     "DevisFactures": DevisFactures,
     "Evenements": Evenements,
     "Finances": Finances,
     "Messagerie": Messagerie,
     "Mockups": Mockups,
+    "ModelesDocuments": ModelesDocuments,
     "Objectifs": Objectifs,
     "Parametres": Parametres,
     "Pointage": Pointage,
@@ -55,8 +57,6 @@ export const PAGES = {
     "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
-    "DemandesRH": DemandesRH,
-    "ModelesDocuments": ModelesDocuments,
     "PerformanceEmployes": PerformanceEmployes,
 }
 

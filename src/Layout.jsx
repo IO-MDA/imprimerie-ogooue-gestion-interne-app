@@ -125,7 +125,7 @@ export default function Layout({ children, currentPageName }) {
   const navigation = isClient 
     ? allNavigation.filter(item => item.href === 'PortailClient')
     : allNavigation.filter(item => 
-        item.roles.includes(user?.role || 'user') && !item.hideForClients
+        item.roles.includes(user?.role || 'user')
       );
 
   const handleLogout = () => {
