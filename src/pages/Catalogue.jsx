@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   Filter,
   Sparkles,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProduitCatalogueForm from '@/components/catalogue/ProduitCatalogueForm';
@@ -56,6 +57,8 @@ export default function Catalogue() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveOnly, setShowInactiveOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('default'); // default, prix_asc, prix_desc, delai
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -234,18 +237,79 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
     }
   };
 
+  // Advanced search with scoring
+  const searchProducts = (products, query) => {
+    if (!query) return products;
+    
+    const search = query.toLowerCase().trim();
+    const words = search.split(' ').filter(w => w.length > 0);
+    
+    return products.map(p => {
+      let score = 0;
+      const nom = p.nom?.toLowerCase() || '';
+      const description = p.description_courte?.toLowerCase() || '';
+      const categorie = p.categorie?.toLowerCase() || '';
+      const tags = (p.tags || []).join(' ').toLowerCase();
+      
+      // Exact match in name (highest priority)
+      if (nom === search) score += 100;
+      else if (nom.includes(search)) score += 50;
+      
+      // Word matches in name
+      words.forEach(word => {
+        if (nom.includes(word)) score += 20;
+        if (description.includes(word)) score += 10;
+        if (categorie.includes(word)) score += 15;
+        if (tags.includes(word)) score += 8;
+      });
+      
+      // Partial matches (fuzzy)
+      if (nom.includes(search.slice(0, -1))) score += 5;
+      
+      return { ...p, searchScore: score };
+    })
+    .filter(p => p.searchScore > 0)
+    .sort((a, b) => b.searchScore - a.searchScore);
+  };
+
   // Filtering
-  const filteredProduits = produits.filter(p => {
+  let filteredProduits = produits.filter(p => {
     if (categoryFilter !== 'all' && p.categorie !== categoryFilter) return false;
     if (showInactiveOnly && p.actif) return false;
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return p.nom?.toLowerCase().includes(search) ||
-             p.description_courte?.toLowerCase().includes(search) ||
-             p.tags?.some(t => t.toLowerCase().includes(search));
-    }
     return true;
   });
+
+  // Apply search
+  if (searchQuery) {
+    filteredProduits = searchProducts(filteredProduits, searchQuery);
+  }
+
+  // Sorting
+  if (sortBy !== 'default') {
+    filteredProduits = [...filteredProduits].sort((a, b) => {
+      switch (sortBy) {
+        case 'prix_asc':
+          return (a.prix_unitaire || 0) - (b.prix_unitaire || 0);
+        case 'prix_desc':
+          return (b.prix_unitaire || 0) - (a.prix_unitaire || 0);
+        case 'delai':
+          // Sort by estimated delay (convert to comparable format)
+          const delaiA = a.delai_estime || '';
+          const delaiB = b.delai_estime || '';
+          return delaiA.localeCompare(delaiB);
+        case 'nom':
+          return (a.nom || '').localeCompare(b.nom || '');
+        default:
+          return 0;
+      }
+    });
+  }
+
+  // Update active filters indicator
+  useEffect(() => {
+    const active = categoryFilter !== 'all' || showInactiveOnly || sortBy !== 'default' || searchQuery !== '';
+    setHasActiveFilters(active);
+  }, [categoryFilter, showInactiveOnly, sortBy, searchQuery]);
 
   // Group by category
   const produitsParCategorie = {};
@@ -345,38 +409,105 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
       </div>
 
       {/* Filters */}
-      <Card className="border-0 shadow-lg">
+      <Card className={`border-0 shadow-lg transition-all ${hasActiveFilters ? 'ring-2 ring-blue-500' : ''}`}>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes catégories</SelectItem>
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
+          <div className="space-y-4">
+            {/* Active filters indicator */}
+            {hasActiveFilters && (
+              <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">
+                    Filtres actifs ({[
+                      categoryFilter !== 'all' ? 1 : 0,
+                      showInactiveOnly ? 1 : 0,
+                      sortBy !== 'default' ? 1 : 0,
+                      searchQuery ? 1 : 0
+                    ].reduce((a, b) => a + b, 0)})
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCategoryFilter('all');
+                    setSearchQuery('');
+                    setShowInactiveOnly(false);
+                    setSortBy('default');
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  Réinitialiser
+                </Button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              {/* Search */}
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Recherche avancée (nom, description, tags...)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+                {searchQuery && (
+                  <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-100 text-blue-700 text-xs">
+                    {filteredProduits.length} résultat{filteredProduits.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Category Filter */}
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <span>Toutes catégories</span>
+                      <Badge className="bg-slate-100 text-slate-700 text-xs">{produits.length}</Badge>
+                    </div>
+                  </SelectItem>
+                  {CATEGORIES.map(cat => {
+                    const count = produits.filter(p => p.categorie === cat).length;
+                    return (
+                      <SelectItem key={cat} value={cat}>
+                        <div className="flex items-center gap-2">
+                          <span>{cat}</span>
+                          <Badge className="bg-blue-100 text-blue-700 text-xs">{count}</Badge>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Tri par défaut</SelectItem>
+                  <SelectItem value="nom">Nom (A-Z)</SelectItem>
+                  <SelectItem value="prix_asc">Prix (croissant) ⬆</SelectItem>
+                  <SelectItem value="prix_desc">Prix (décroissant) ⬇</SelectItem>
+                  <SelectItem value="delai">Délai de livraison</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Additional filters */}
               <Button 
                 variant={showInactiveOnly ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowInactiveOnly(!showInactiveOnly)}
-                className="flex-1"
+                className={showInactiveOnly ? 'bg-blue-600' : ''}
               >
                 <Filter className="w-4 h-4 mr-2" />
-                Inactifs
+                Inactifs {showInactiveOnly && `(${produits.filter(p => !p.actif).length})`}
               </Button>
             </div>
           </div>
