@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         <p style="margin: 5px 0; font-size: 13px;">
           📞 <strong>Tél:</strong> +241 060 44 46 34 / 074 42 41 42<br>
           📧 <strong>Email:</strong> imprimerieogooue@gmail.com<br>
-          📍 <strong>Adresse:</strong> Carrefour Fina en face de Finam, Moanda
+          📍 <strong>Adresse:</strong> Carrefour Fina en Face de Finam, Moanda, Gabon
         </p>
       </div>
     </div>

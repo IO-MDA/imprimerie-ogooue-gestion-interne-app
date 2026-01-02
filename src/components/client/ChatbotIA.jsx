@@ -102,7 +102,7 @@ SERVICES ET PRODUITS:
 CONTACT:
 Tel: +241 060 44 46 34 / 074 42 41 42
 Email: imprimerieogooue@gmail.com
-Adresse: Carrefour Fina en face de Finam, Moanda - Gabon
+Adresse: Carrefour Fina en Face de Finam, Moanda, Gabon
 WhatsApp: https://wa.me/message/7WVKSVB3RHOUA1
 
 INSTRUCTIONS:
