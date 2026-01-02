@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
-    const { factureId, nouveauStatut, commentaire } = await req.json();
+    const { factureId, nouveauStatut, commentaire, noteInterne } = await req.json();
 
     if (!factureId || !nouveauStatut) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,16 +28,23 @@ Deno.serve(async (req) => {
       statut: nouveauStatut,
       date: new Date().toISOString(),
       modifie_par: user.full_name,
-      commentaire: commentaire || ''
+      commentaire: commentaire || '',
+      note_interne: noteInterne || ''
     };
 
     const historique = [...(facture.historique_statuts || []), nouvelHistorique];
 
-    // Mettre à jour la facture
-    await base44.asServiceRole.entities.Facture.update(factureId, {
+    // Mettre à jour la facture avec note interne
+    const updateData = {
       statut_commande: nouveauStatut,
       historique_statuts: historique
-    });
+    };
+    
+    if (noteInterne) {
+      updateData.notes_internes = (facture.notes_internes || '') + `\n[${new Date().toISOString()}] ${user.full_name}: ${noteInterne}`;
+    }
+
+    await base44.asServiceRole.entities.Facture.update(factureId, updateData);
 
     // Envoyer notification par email au client
     if (facture.client_email) {

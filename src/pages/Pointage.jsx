@@ -58,35 +58,24 @@ export default function Pointage() {
   };
 
   const handlePointageAutomatique = async () => {
+    // Désactivé - les employés pointent manuellement maintenant
+  };
+
+  const handleEntree = async () => {
     try {
-      const userData = await base44.auth.me();
-      if (!userData) return;
-      
-      // Bloquer si client
-      const clients = await base44.entities.Client.filter({ user_id: userData.id });
-      if (clients.length > 0) return;
-
       const today = moment().format('YYYY-MM-DD');
-      const pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id });
-      
-      const pointageToday = pointagesData.find(p => 
-        p.date === today && p.statut === 'en_cours'
-      );
-
-      if (!pointageToday) {
-        await base44.entities.Pointage.create({
-          employe_id: userData.id,
-          employe_nom: userData.full_name,
-          employe_email: userData.email,
-          date: today,
-          heure_entree: moment().format('HH:mm'),
-          statut: 'en_cours'
-        });
-        toast.success('Pointage d\'entrée enregistré');
-        loadData();
-      }
+      await base44.entities.Pointage.create({
+        employe_id: user.id,
+        employe_nom: user.full_name,
+        employe_email: user.email,
+        date: today,
+        heure_entree: moment().format('HH:mm'),
+        statut: 'en_cours'
+      });
+      toast.success('Pointage d\'entrée enregistré');
+      loadData();
     } catch (e) {
-      console.error('Erreur pointage automatique:', e);
+      toast.error('Erreur lors du pointage d\'entrée');
     }
   };
 
@@ -209,7 +198,60 @@ export default function Pointage() {
         )}
       </div>
 
-      {pointageEnCours && (
+      {/* Bouton de pointage pour employé */}
+      {isOperateur && (
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+          <CardContent className="p-6">
+            {pointageEnCours ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Clock className="w-7 h-7 text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">Pointage en cours</p>
+                    <p className="text-blue-100">Entrée: {pointageEnCours.heure_entree}</p>
+                    <p className="text-xs text-blue-200 mt-1">
+                      Depuis {moment(pointageEnCours.heure_entree, 'HH:mm').fromNow()}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => handleSortie(pointageEnCours.id)} 
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Pointer la sortie
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Clock className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">Prêt à pointer</p>
+                    <p className="text-blue-100">Cliquez pour enregistrer votre arrivée</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleEntree}
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Pointer l'entrée
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vue admin/manager du pointage en cours */}
+      {!isOperateur && pointageEnCours && (
         <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -220,19 +262,9 @@ export default function Pointage() {
                 <div>
                   <p className="font-semibold text-slate-900">Pointage en cours</p>
                   <p className="text-sm text-slate-600">Entrée: {pointageEnCours.heure_entree}</p>
-                  {!isOperateur && pointageEnCours.employe_nom && (
-                    <p className="text-xs text-slate-500">{pointageEnCours.employe_nom}</p>
-                  )}
+                  <p className="text-xs text-slate-500">{pointageEnCours.employe_nom}</p>
                 </div>
               </div>
-              <Button 
-                onClick={() => handleSortie(pointageEnCours.id)} 
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={isOperateur && pointageEnCours.employe_id !== user?.id}
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Pointer la sortie
-              </Button>
             </div>
           </CardContent>
         </Card>
