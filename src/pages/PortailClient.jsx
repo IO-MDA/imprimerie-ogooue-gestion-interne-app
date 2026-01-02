@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,9 @@ import {
   Clock,
   CheckCircle2,
   Eye,
-  Download
+  Download,
+  MessageSquare,
+  Truck
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
@@ -149,21 +151,7 @@ export default function PortailClient() {
     // PDF generation would be handled here
   };
 
-  const chargerEstimation = async (factureId) => {
-    if (estimations[factureId]) return; // Déjà chargé
 
-    setLoadingEstimation(prev => ({ ...prev, [factureId]: true }));
-    try {
-      const response = await base44.functions.invoke('estimerDelaiCommande', { factureId });
-      if (response.data.success) {
-        setEstimations(prev => ({ ...prev, [factureId]: response.data.estimation }));
-      }
-    } catch (e) {
-      console.error('Erreur estimation:', e);
-    } finally {
-      setLoadingEstimation(prev => ({ ...prev, [factureId]: false }));
-    }
-  };
 
   if (isLoading) {
     return (
@@ -301,75 +289,100 @@ export default function PortailClient() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Bienvenue, {client.nom} 👋
-            </h1>
-            <p className="text-blue-100">
-              Suivez vos commandes et gérez vos demandes en toute simplicité
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowDemandeForm(true)}
-            className="bg-white text-blue-600 hover:bg-blue-50"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle demande
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-6">
+      {/* Header */}
+      <ClientHeader client={client} />
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Commandes en cours</p>
-                <p className="text-3xl font-bold text-blue-600">{totalCommandes}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-blue-600" />
-              </div>
+      {/* WhatsApp Button */}
+      <WhatsAppButton />
+
+      {/* Content */}
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {activeTab === 'accueil' && (
+          <>
+            {/* Welcome Card */}
+            <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white overflow-hidden">
+              <CardContent className="p-6">
+                <h1 className="text-2xl font-bold mb-2">
+                  Bonjour, {client.nom} 👋
+                </h1>
+                <p className="text-blue-100 mb-4">
+                  Suivez vos commandes et gérez vos demandes
+                </p>
+                <Button
+                  onClick={() => setShowDemandeForm(true)}
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle demande
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 gap-4">
+              <Card className="border-0 shadow-lg">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Commandes en cours</p>
+                    <p className="text-2xl font-bold text-blue-600">{totalCommandes}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <ShoppingBag className="w-6 h-6 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Factures en attente</p>
+                    <p className="text-2xl font-bold text-amber-600">{facturesImpayees}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-amber-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-lg">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Projets actifs</p>
+                    <p className="text-2xl font-bold text-emerald-600">{projetsActifs}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <Package className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Factures en attente</p>
-                <p className="text-3xl font-bold text-amber-600">{facturesImpayees}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Contact Info */}
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-4 space-y-3">
+                <h3 className="font-semibold text-slate-900 mb-3">Nous contacter</h3>
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="text-slate-600">+241 060 44 46 34</p>
+                    <p className="text-slate-600">+241 074 42 41 42</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <p className="text-slate-600">imprimerieogooue@gmail.com</p>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <p className="text-slate-600">Carrefour Fina en face de Finam, Moanda - Gabon</p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Projets actifs</p>
-                <p className="text-3xl font-bold text-emerald-600">{projetsActifs}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Package className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="catalogue" className="w-full">
+        {activeTab === 'catalogue' && (
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           <TabsTrigger value="commandes">Commandes</TabsTrigger>
@@ -379,8 +392,8 @@ export default function PortailClient() {
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
 
-        {/* Commandes Tab */}
-        <TabsContent value="commandes" className="space-y-4">
+        {activeTab === 'commandes' && (
+          <div className="space-y-4">
           {commandes.length === 0 ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="py-16 text-center">
@@ -443,8 +456,8 @@ export default function PortailClient() {
           )}
         </TabsContent>
 
-        {/* Catalogue Tab */}
-        <TabsContent value="catalogue" className="space-y-4">
+        {activeTab === 'catalogue' && (
+          <div className="space-y-4">
           <Card className="border-0 shadow-lg">
             <CardContent className="p-4">
               <div className="flex gap-3">
@@ -549,7 +562,66 @@ export default function PortailClient() {
               ))}
             </div>
           )}
-        </TabsContent>
+        )}
+
+        {activeTab === 'demandes' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-900">Mes demandes</h2>
+              <Button onClick={() => setShowDemandeForm(true)} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle
+              </Button>
+            </div>
+
+            {demandes.length === 0 ? (
+              <Card className="border-0 shadow-lg">
+                <CardContent className="py-16 text-center">
+                  <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500">Aucune demande pour le moment</p>
+                  <Button
+                    onClick={() => setShowDemandeForm(true)}
+                    className="mt-4 bg-blue-600"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Créer une demande
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              demandes.map(demande => (
+                <Card
+                  key={demande.id}
+                  className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                  onClick={() => setSelectedDemande(demande)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-900">{demande.titre}</h3>
+                          <Badge className={
+                            demande.statut === 'termine' ? 'bg-green-100 text-green-700' :
+                            demande.statut === 'repondu' ? 'bg-emerald-100 text-emerald-700' :
+                            demande.statut === 'en_production' ? 'bg-purple-100 text-purple-700' :
+                            demande.statut === 'en_cours' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-700'
+                          }>
+                            {demande.statut.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-600 line-clamp-2">{demande.description}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      {moment(demande.created_date).format('DD/MM/YYYY HH:mm')}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Devis Tab */}
         <TabsContent value="devis" className="space-y-4">
@@ -607,10 +679,10 @@ export default function PortailClient() {
               </Card>
             ))
           )}
-        </TabsContent>
+        )}
 
-        {/* Factures Tab */}
-        <TabsContent value="factures" className="space-y-4">
+        {activeTab === 'factures' && (
+          <div className="space-y-4">
           {factures.length === 0 ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="py-16 text-center">
@@ -744,10 +816,7 @@ export default function PortailClient() {
               );
             })
           )}
-        </TabsContent>
-
-        {/* Projets Tab */}
-        <TabsContent value="projets" className="space-y-4">
+        )}
           {projets.length === 0 ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="py-16 text-center">
@@ -801,54 +870,18 @@ export default function PortailClient() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
+      </div>
 
-        {/* Messages Tab */}
-        <TabsContent value="messages" className="space-y-4">
-          {conversations.length === 0 ? (
-            <Card className="border-0 shadow-lg">
-              <CardContent className="py-16 text-center">
-                <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">Aucune conversation pour le moment</p>
-              </CardContent>
-            </Card>
-          ) : (
-            conversations.map(c => (
-              <Card key={c.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <MessageSquare className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-slate-900">
-                          {c.intention_detectee || 'Conversation'}
-                        </h3>
-                        <Badge className={getStatusColor(c.statut)}>
-                          {c.statut}
-                        </Badge>
-                        {c.non_lu && (
-                          <Badge className="bg-red-500 text-white">Nouveau</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-slate-600 line-clamp-2">
-                        {c.dernier_message}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-2">
-                        {moment(c.dernier_message_date).fromNow()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
+      {/* Bottom Navigation */}
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        badges={{
+          demandes: demandes.filter(d => d.statut === 'nouveau' || d.statut === 'en_cours').length,
+          commandes: commandes.filter(c => c.statut !== 'livree' && c.statut !== 'annulee').length,
+          factures: facturesImpayees
+        }}
+      />
 
       {/* Demande Form Dialog */}
       <Dialog open={showDemandeForm} onOpenChange={setShowDemandeForm}>
@@ -856,7 +889,7 @@ export default function PortailClient() {
           <DialogHeader>
             <DialogTitle>Nouvelle demande</DialogTitle>
           </DialogHeader>
-          <DemandeClientForm
+          <DemandeForm
             client={client}
             onSuccess={() => {
               setShowDemandeForm(false);
@@ -867,17 +900,70 @@ export default function PortailClient() {
         </DialogContent>
       </Dialog>
 
-      {/* Catalogue Generator Dialog */}
-      <Dialog open={showCatalogueGenerator} onOpenChange={setShowCatalogueGenerator}>
-        <DialogContent className="max-w-2xl">
+      {/* Demande Detail Dialog */}
+      <Dialog open={!!selectedDemande} onOpenChange={() => setSelectedDemande(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Générer mon catalogue personnalisé</DialogTitle>
+            <DialogTitle>{selectedDemande?.titre}</DialogTitle>
           </DialogHeader>
-          <CatalogueGenerator
-            produits={produitsCatalogue}
-            selectedProduits={[]}
-            onClose={() => setShowCatalogueGenerator(false)}
-          />
+          {selectedDemande && (
+            <div className="space-y-4">
+              <div>
+                <Badge className={
+                  selectedDemande.statut === 'termine' ? 'bg-green-100 text-green-700' :
+                  selectedDemande.statut === 'repondu' ? 'bg-emerald-100 text-emerald-700' :
+                  selectedDemande.statut === 'en_production' ? 'bg-purple-100 text-purple-700' :
+                  selectedDemande.statut === 'en_cours' ? 'bg-blue-100 text-blue-700' :
+                  'bg-slate-100 text-slate-700'
+                }>
+                  {selectedDemande.statut.replace('_', ' ')}
+                </Badge>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Description</h4>
+                <p className="text-slate-600">{selectedDemande.description}</p>
+              </div>
+
+              {selectedDemande.fichiers && selectedDemande.fichiers.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">Fichiers joints</h4>
+                  <div className="space-y-2">
+                    {selectedDemande.fichiers.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 bg-slate-50 rounded hover:bg-slate-100"
+                      >
+                        <FileText className="w-4 h-4 text-slate-500" />
+                        <span className="text-sm text-slate-700">Fichier {index + 1}</span>
+                        <Download className="w-4 h-4 text-slate-400 ml-auto" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedDemande.reponse_admin && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold mb-2 text-blue-900">Réponse</h4>
+                  <p className="text-slate-700">{selectedDemande.reponse_admin}</p>
+                </div>
+              )}
+
+              {selectedDemande.historique_statuts && selectedDemande.historique_statuts.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Suivi</h4>
+                  <TimelineStatut
+                    historique={selectedDemande.historique_statuts}
+                    statutActuel={selectedDemande.statut}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
