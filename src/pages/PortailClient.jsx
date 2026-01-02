@@ -867,6 +867,11 @@ export default function PortailClient() {
                     </div>
                   </div>
                 </CardContent>
+              </Card>
+            ))
+          )}
+          </div>
+        )}
       </div>
 
       {/* Bottom Navigation */}
