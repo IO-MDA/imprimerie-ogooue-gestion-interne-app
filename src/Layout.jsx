@@ -38,6 +38,8 @@ import { cn } from "@/lib/utils";
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
+  const [client, setClient] = useState(null);
+  const [isClient, setIsClient] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
@@ -51,6 +53,17 @@ export default function Layout({ children, currentPageName }) {
     try {
       const userData = await base44.auth.me();
       setUser(userData);
+      
+      // Vérifier si l'utilisateur a un profil client
+      const clients = await base44.entities.Client.filter({ user_id: userData.id });
+      if (clients.length > 0) {
+        setClient(clients[0]);
+        setIsClient(true);
+        // Rediriger vers le portail client si pas déjà sur cette page
+        if (currentPageName !== 'PortailClient') {
+          window.location.href = '/PortailClient';
+        }
+      }
     } catch (e) {
       console.log('User not logged in');
     }
@@ -104,10 +117,10 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Paramètres', href: 'Parametres', icon: Settings, roles: ['admin'] },
       ];
 
-  // Filtrer selon le rôle
-  const navigation = allNavigation.filter(item => 
-    item.roles.includes(user?.role || 'user')
-  );
+  // Filtrer selon le rôle et le type d'utilisateur
+  const navigation = isClient 
+    ? allNavigation.filter(item => item.href === 'PortailClient')
+    : allNavigation.filter(item => item.roles.includes(user?.role || 'user'));
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -205,7 +218,7 @@ export default function Layout({ children, currentPageName }) {
                         {user.full_name || user.email}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {user.role === 'admin' ? 'Administrateur' : user.role === 'manager' ? 'Manager' : 'Employé'}
+                        {isClient ? 'Client' : user.role === 'admin' ? 'Administrateur' : user.role === 'manager' ? 'Manager' : 'Employé'}
                       </p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-slate-400" />

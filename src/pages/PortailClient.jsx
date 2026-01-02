@@ -62,8 +62,16 @@ export default function PortailClient() {
         type: 'particulier'
       });
 
-      // Find client by email
-      const clients = await base44.entities.Client.filter({ email: userData.email });
+      // Find client by user_id (priorité) ou email (fallback)
+      let clients = await base44.entities.Client.filter({ user_id: userData.id });
+      if (clients.length === 0) {
+        // Fallback: chercher par email pour migration
+        clients = await base44.entities.Client.filter({ email: userData.email });
+        // Si trouvé, mettre à jour avec user_id
+        if (clients.length > 0) {
+          await base44.entities.Client.update(clients[0].id, { user_id: userData.id });
+        }
+      }
       const clientData = clients[0];
       setClient(clientData);
 
@@ -126,6 +134,7 @@ export default function PortailClient() {
   const handleCreateProfile = async (profileData) => {
     try {
       const newClient = await base44.entities.Client.create({
+        user_id: user.id,
         nom: profileData.nom,
         email: profileData.email || user.email,
         telephone: profileData.telephone,
