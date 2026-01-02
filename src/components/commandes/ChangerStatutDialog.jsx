@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Clock, Package, CheckCircle, Truck, MapPin, XCircle } from 'lucide-react';
+import { Clock, Package, CheckCircle, Truck, MapPin, XCircle, StickyNote } from 'lucide-react';
 
 const STATUTS = [
   { value: 'en_attente', label: 'En attente', icon: Clock, color: 'bg-slate-100 text-slate-700' },
@@ -20,6 +20,7 @@ const STATUTS = [
 export default function ChangerStatutDialog({ facture, open, onClose, onSuccess }) {
   const [selectedStatut, setSelectedStatut] = useState(facture?.statut_commande || 'en_attente');
   const [commentaire, setCommentaire] = useState('');
+  const [noteInterne, setNoteInterne] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -30,7 +31,8 @@ export default function ChangerStatutDialog({ facture, open, onClose, onSuccess 
       await base44.functions.invoke('notifierClientStatut', {
         factureId: facture.id,
         nouveauStatut: selectedStatut,
-        commentaire
+        commentaire,
+        noteInterne
       });
 
       toast.success('Statut mis à jour et client notifié');
@@ -91,11 +93,28 @@ export default function ChangerStatutDialog({ facture, open, onClose, onSuccess 
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               placeholder="Ex: Votre commande sera prête demain matin..."
-              rows={4}
+              rows={2}
               className="mt-2"
             />
             <p className="text-xs text-slate-500 mt-1">
               Ce commentaire sera inclus dans l'email envoyé au client
+            </p>
+          </div>
+
+          <div>
+            <Label className="flex items-center gap-2">
+              <StickyNote className="w-4 h-4 text-amber-600" />
+              Note interne (non visible par le client)
+            </Label>
+            <Textarea
+              value={noteInterne}
+              onChange={(e) => setNoteInterne(e.target.value)}
+              placeholder="Ex: Problème d'impression, à refaire..."
+              rows={2}
+              className="mt-2 border-amber-200 focus:border-amber-400"
+            />
+            <p className="text-xs text-amber-600 mt-1">
+              Cette note reste privée pour l'équipe
             </p>
           </div>
 
@@ -114,9 +133,12 @@ export default function ChangerStatutDialog({ facture, open, onClose, onSuccess 
                       </span>
                     </div>
                     {h.commentaire && (
-                      <p className="text-slate-600">{h.commentaire}</p>
+                      <p className="text-slate-600 mb-1">💬 {h.commentaire}</p>
                     )}
-                    <p className="text-slate-500 mt-1">Par: {h.modifie_par}</p>
+                    {h.note_interne && (
+                      <p className="text-amber-700 mb-1">🔒 Note: {h.note_interne}</p>
+                    )}
+                    <p className="text-slate-500">Par: {h.modifie_par}</p>
                   </div>
                 ))}
               </div>
