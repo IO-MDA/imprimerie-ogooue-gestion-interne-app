@@ -97,6 +97,7 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
         { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'manager', 'user'] },
         { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'manager', 'user'] },
+        { name: 'Tarifs clients', href: 'TarifsClients', icon: Receipt, roles: ['admin'] },
         { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'manager', 'user'] },
         { name: 'Événements', href: 'Evenements', icon: Bell, roles: ['admin', 'manager', 'user'] },
         { name: 'Communications', href: 'Annonces', icon: Megaphone, roles: ['admin', 'manager', 'user'] },

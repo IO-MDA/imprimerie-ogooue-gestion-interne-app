@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,8 +16,22 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
   const [couleurPrimaire, setCouleurPrimaire] = useState('#0078d7');
   const [includePromos, setIncludePromos] = useState(false);
   const [includeNouveautes, setIncludeNouveautes] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
+  const [tarifsClients, setTarifsClients] = useState([]);
 
   const categories = [...new Set(produits.map(p => p.categorie))];
+
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    const clientsData = await base44.entities.Client.list();
+    const tarifsData = await base44.entities.TarifsClients.list();
+    setClients(clientsData);
+    setTarifsClients(tarifsData);
+  };
 
   const generatePDF = async () => {
     setGenerating(true);
@@ -58,12 +72,54 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         }
       }
 
+      // Calculer prix personnalisés si client sélectionné
+      const clientData = selectedClient ? clients.find(c => c.id === selectedClient) : null;
+      
+      const getPrixClient = (produit) => {
+        if (!clientData) return produit.prix_unitaire;
+        
+        // Chercher tarif spécifique
+        const tarif = tarifsClients.find(t => t.client_id === clientData.id && t.produit_id === produit.id);
+        
+        if (tarif) {
+          if (tarif.prix_client) return tarif.prix_client;
+          if (tarif.remise_pct) return produit.prix_unitaire * (1 - tarif.remise_pct / 100);
+        }
+        
+        // Remise globale client
+        if (clientData.remise_globale_pct) {
+          return produit.prix_unitaire * (1 - clientData.remise_globale_pct / 100);
+        }
+        
+        return produit.prix_unitaire;
+      };
+
       // Parse couleur
       const rgbColor = {
         r: parseInt(couleurPrimaire.slice(1, 3), 16),
         g: parseInt(couleurPrimaire.slice(3, 5), 16),
         b: parseInt(couleurPrimaire.slice(5, 7), 16)
       };
+
+      // IA de mise en page automatique selon nombre de produits
+      const totalProduits = produitsToInclude.length;
+      let layoutConfig = {
+        cardsPerPage: 5,
+        cardHeight: 45,
+        descriptionLines: 2,
+        fontSize: 8,
+        titleFontSize: 11
+      };
+
+      if (totalProduits <= 6) {
+        layoutConfig = { cardsPerPage: 4, cardHeight: 60, descriptionLines: 3, fontSize: 9, titleFontSize: 13 };
+      } else if (totalProduits <= 20) {
+        layoutConfig = { cardsPerPage: 5, cardHeight: 45, descriptionLines: 2, fontSize: 8, titleFontSize: 11 };
+      } else if (totalProduits <= 60) {
+        layoutConfig = { cardsPerPage: 7, cardHeight: 35, descriptionLines: 2, fontSize: 7, titleFontSize: 10 };
+      } else {
+        layoutConfig = { cardsPerPage: 9, cardHeight: 28, descriptionLines: 1, fontSize: 6.5, titleFontSize: 9 };
+      }
 
       // Create PDF with professional layout
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -124,6 +180,12 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       pdf.text('Tél: +241 060 44 46 34 / 074 42 41 42', pageWidth / 2, pageHeight / 2 + 40, { align: 'center' });
       pdf.text('Email: imprimerieogooue@gmail.com', pageWidth / 2, pageHeight / 2 + 48, { align: 'center' });
 
+      if (clientData) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`Catalogue personnalisé pour: ${clientData.nom}`, pageWidth / 2, pageHeight / 2 + 65, { align: 'center' });
+      }
+
       // Group products by category
       const produitsParCategorie = {};
       produitsToInclude.forEach(p => {
@@ -159,7 +221,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         
         for (let i = 0; i < produitsSection.length; i++) {
           const produit = produitsSection[i];
-          const cardHeight = 45;
+          const cardHeight = layoutConfig.cardHeight;
           
           if (yPos + cardHeight > pageHeight - 25) {
             addFooter();
@@ -181,21 +243,22 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           const textWidth = contentWidth - 37;
           
           pdf.setTextColor(0, 0, 0);
-          pdf.setFontSize(11);
+          pdf.setFontSize(layoutConfig.titleFontSize);
           pdf.setFont('helvetica', 'bold');
           pdf.text(produit.nom, textStartX, yPos + 8);
           
-          pdf.setFontSize(8);
+          pdf.setFontSize(layoutConfig.fontSize);
           pdf.setFont('helvetica', 'normal');
           const descLines = pdf.splitTextToSize(produit.description_courte || '', textWidth);
-          pdf.text(descLines.slice(0, 2), textStartX, yPos + 14);
+          pdf.text(descLines.slice(0, layoutConfig.descriptionLines), textStartX, yPos + 14);
           
-          pdf.setFontSize(12);
+          pdf.setFontSize(layoutConfig.titleFontSize + 1);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
-          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(produit.prix_unitaire || 0));
+          const prixFinal = getPrixClient(produit);
+          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(prixFinal || 0));
           const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
-          pdf.text(prixText, textStartX, yPos + 30);
+          pdf.text(prixText, textStartX, yPos + (cardHeight - 15));
           
           if (produit.delai_estime) {
             pdf.setFontSize(7);
@@ -236,7 +299,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           const produit = produitsCategorie[i];
           
           // Calculate product card height
-          const cardHeight = 45;
+          const cardHeight = layoutConfig.cardHeight;
           
           // Check if we need a new page (leave space for footer)
           if (yPos + cardHeight > pageHeight - 25) {
@@ -262,30 +325,31 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           const textWidth = contentWidth - 37;
           
           pdf.setTextColor(0, 0, 0);
-          pdf.setFontSize(11);
+          pdf.setFontSize(layoutConfig.titleFontSize);
           pdf.setFont('helvetica', 'bold');
           pdf.text(produit.nom, textStartX, yPos + 8);
           
-          pdf.setFontSize(8);
+          pdf.setFontSize(layoutConfig.fontSize);
           pdf.setFont('helvetica', 'normal');
           
           const descLines = pdf.splitTextToSize(produit.description_courte || '', textWidth);
-          pdf.text(descLines.slice(0, 2), textStartX, yPos + 14);
+          pdf.text(descLines.slice(0, layoutConfig.descriptionLines), textStartX, yPos + 14);
           
           // Price (prominent)
-          pdf.setFontSize(12);
+          pdf.setFontSize(layoutConfig.titleFontSize + 1);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
-          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(produit.prix_unitaire || 0));
+          const prixFinal = getPrixClient(produit);
+          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(prixFinal || 0));
           const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
-          pdf.text(prixText, textStartX, yPos + 30);
+          pdf.text(prixText, textStartX, yPos + (cardHeight - 15));
           
           // Delivery time (small, subtle)
           if (produit.delai_estime) {
-            pdf.setFontSize(7);
+            pdf.setFontSize(layoutConfig.fontSize - 0.5);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(100, 100, 100);
-            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + 37);
+            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + (cardHeight - 8));
           }
           
           yPos += cardHeight + 3;
@@ -296,7 +360,8 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       }
 
       // Save PDF
-      const fileName = `Catalogue_Impression_&_Saisie_${new Date().toISOString().split('T')[0]}.pdf`;
+      const clientSuffix = clientData ? `_${clientData.nom.replace(/ /g, '_')}` : '';
+      const fileName = `Catalogue_Impression_&_Saisie${clientSuffix}_${new Date().toISOString().split('T')[0]}.pdf`;
       
       pdf.save(fileName);
       
@@ -345,6 +410,26 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           </Select>
         </div>
       )}
+
+      <div>
+        <Label>Client (tarification personnalisée)</Label>
+        <Select value={selectedClient} onValueChange={setSelectedClient}>
+          <SelectTrigger>
+            <SelectValue placeholder="Aucun - Prix publics" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={null}>Aucun - Prix publics</SelectItem>
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.nom} {client.remise_globale_pct > 0 && `(-${client.remise_globale_pct}%)`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-slate-500 mt-1">
+          Sélectionnez un client pour générer un catalogue avec ses prix personnalisés
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>

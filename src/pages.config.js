@@ -28,6 +28,7 @@ import StatsPointage from './pages/StatsPointage';
 import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
+import TarifsClients from './pages/TarifsClients';
 import __Layout from './Layout.jsx';
 
 
@@ -62,6 +63,7 @@ export const PAGES = {
     "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
+    "TarifsClients": TarifsClients,
 }
 
 export const pagesConfig = {
