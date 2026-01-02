@@ -402,7 +402,7 @@ export default function PortailClient() {
                       <p className="font-medium text-slate-900 text-sm">imprimerieogooue@gmail.com</p>
                     </div>
                   </a>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50">
+                  <a href="https://maps.app.goo.gl/abBsE7f3NpzDAv1j8?g_st=ipc" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                       <MapPin className="w-5 h-5 text-blue-600" />
                     </div>
@@ -410,7 +410,7 @@ export default function PortailClient() {
                       <p className="text-xs text-slate-500">Notre adresse</p>
                       <p className="font-medium text-slate-900 text-sm">Carrefour Fina, Moanda 🇬🇦</p>
                     </div>
-                  </div>
+                  </a>
                 </div>
               </CardContent>
             </Card>
