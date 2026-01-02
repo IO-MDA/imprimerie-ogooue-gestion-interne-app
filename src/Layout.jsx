@@ -86,6 +86,7 @@ export default function Layout({ children, currentPageName }) {
   // Navigation selon le rôle (admin, manager, user/employe)
   const allNavigation = [
         { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+        { name: 'Tableau de bord RH', href: 'TableauBordRH', icon: Users, roles: ['admin', 'manager'], hideForClients: true },
         { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'], hideForClients: true },
         { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'manager', 'user'] },
         { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
