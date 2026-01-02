@@ -36,6 +36,12 @@ export default function Parametres() {
   const [inviteRole, setInviteRole] = useState('user');
   const [inviteNom, setInviteNom] = useState('');
   const [user, setUser] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    role: 'user'
+  });
   const [reseaux, setReseaux] = useState([]);
   const [showSocialForm, setShowSocialForm] = useState(false);
   const [socialForm, setSocialForm] = useState({
@@ -167,6 +173,51 @@ export default function Parametres() {
     }
   };
 
+  const handleEditUser = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      full_name: u.full_name || '',
+      role: u.role
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      await base44.entities.User.update(editingUser.id, {
+        full_name: editForm.full_name,
+        role: editForm.role
+      });
+      toast.success('Utilisateur modifié avec succès');
+      setShowEditDialog(false);
+      setEditingUser(null);
+      loadData();
+    } catch (e) {
+      toast.error('Erreur lors de la modification');
+      console.error(e);
+    }
+  };
+
+  const handleDeleteUser = async (u) => {
+    if (u.id === user?.id) {
+      toast.error('Vous ne pouvez pas supprimer votre propre compte');
+      return;
+    }
+
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ${u.full_name || u.email} ?`)) {
+      try {
+        await base44.entities.User.delete(u.id);
+        toast.success('Utilisateur supprimé');
+        loadData();
+      } catch (e) {
+        toast.error('Erreur lors de la suppression');
+        console.error(e);
+      }
+    }
+  };
+
   const getSocialIcon = (plateforme) => {
     const icons = {
       facebook: <Facebook className="w-5 h-5" />,
@@ -250,10 +301,31 @@ export default function Parametres() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}>
+                        <Badge className={
+                          u.role === 'admin' ? 'bg-amber-100 text-amber-700' : 
+                          u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 
+                          'bg-slate-100 text-slate-700'
+                        }>
                           <Shield className="w-3 h-3 mr-1" />
-                          {u.role === 'admin' ? 'Administrateur' : 'Opérateur'}
+                          {u.role === 'admin' ? 'Administrateur' : u.role === 'manager' ? 'Manager' : 'Employé'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditUser(u)}
+                          className="text-slate-600 hover:text-blue-600"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteUser(u)}
+                          disabled={u.id === user?.id}
+                          className="text-slate-600 hover:text-red-600 disabled:opacity-30"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -544,6 +616,70 @@ export default function Parametres() {
               <Button onClick={handleInviteUser}>
                 <Mail className="w-4 h-4 mr-2" />
                 Envoyer l'invitation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier l'utilisateur</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nom complet</Label>
+              <Input
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                placeholder="Nom complet"
+              />
+            </div>
+            <div>
+              <Label>Rôle</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      Administrateur
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="manager">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      Manager
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="user">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                      Employé/Opérateur
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-600">
+                <strong>Email:</strong> {editingUser?.email}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                L'email ne peut pas être modifié
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpdateUser}>
+                <Edit className="w-4 h-4 mr-2" />
+                Enregistrer
               </Button>
             </div>
           </div>
