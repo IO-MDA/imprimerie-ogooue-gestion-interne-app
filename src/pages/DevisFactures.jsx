@@ -18,7 +18,12 @@ import {
   Send,
   CheckCircle,
   ArrowRight,
-  Download
+  Download,
+  Package,
+  Truck,
+  MapPin,
+  Clock,
+  XCircle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import DocumentForm from '@/components/documents/DocumentForm';
@@ -35,6 +40,8 @@ export default function DevisFactures() {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState(null);
+  const [showStatutDialog, setShowStatutDialog] = useState(false);
+  const [selectedFacture, setSelectedFacture] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -252,6 +259,19 @@ export default function DevisFactures() {
     return <Badge className={config.class}>{config.label}</Badge>;
   };
 
+  const getStatutCommandeBadge = (statut) => {
+    const configs = {
+      'en_attente': { label: 'En attente', icon: Clock, class: 'bg-slate-100 text-slate-700' },
+      'en_preparation': { label: 'En préparation', icon: Package, class: 'bg-blue-100 text-blue-700' },
+      'prete': { label: 'Prête', icon: CheckCircle, class: 'bg-purple-100 text-purple-700' },
+      'expediee': { label: 'Expédiée', icon: Truck, class: 'bg-amber-100 text-amber-700' },
+      'livree': { label: 'Livrée', icon: MapPin, class: 'bg-emerald-100 text-emerald-700' },
+      'annulee': { label: 'Annulée', icon: XCircle, class: 'bg-rose-100 text-rose-700' }
+    };
+    const config = configs[statut] || configs['en_attente'];
+    return <Badge className={config.class}>{config.label}</Badge>;
+  };
+
   const filteredDevis = devis.filter(d => 
     d.client_nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.numero?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -276,6 +296,7 @@ export default function DevisFactures() {
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-slate-900">{doc.numero}</h3>
                 {getStatusBadge(type, doc.statut)}
+                {type === 'facture' && doc.statut_commande && getStatutCommandeBadge(doc.statut_commande)}
               </div>
               <p className="text-sm text-slate-500 mt-1">{doc.client_nom}</p>
               <p className="text-xs text-slate-400">{moment(doc.date_emission).format('DD/MM/YYYY')}</p>
@@ -287,6 +308,20 @@ export default function DevisFactures() {
               <p className="font-bold text-slate-900">{(doc.total || 0).toLocaleString()} FCFA</p>
             </div>
             <div className="flex items-center gap-2">
+              {type === 'facture' && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => {
+                    setSelectedFacture(doc);
+                    setShowStatutDialog(true);
+                  }} 
+                  className="text-blue-600"
+                  title="Changer statut commande"
+                >
+                  <Package className="w-4 h-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" onClick={() => downloadPDF(doc, type)} title="Télécharger PDF">
                 <Download className="w-4 h-4" />
               </Button>
@@ -514,6 +549,17 @@ export default function DevisFactures() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Changer Statut Commande Dialog */}
+      <ChangerStatutDialog
+        facture={selectedFacture}
+        open={showStatutDialog}
+        onClose={() => {
+          setShowStatutDialog(false);
+          setSelectedFacture(null);
+        }}
+        onSuccess={loadData}
+      />
     </div>
     </RoleProtection>
   );
