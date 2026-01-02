@@ -280,15 +280,13 @@ Imprimerie Ogooué`
           <h1 className="text-2xl font-bold text-slate-900">Gestion des tâches</h1>
           <p className="text-slate-500">Planifiez et suivez les tâches de l'équipe</p>
         </div>
-        {isAdmin && (
-          <Button 
-            onClick={() => { setEditingTache(null); setShowForm(true); }}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle tâche
-          </Button>
-        )}
+        <Button 
+          onClick={() => { setEditingTache(null); setShowForm(true); }}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nouvelle tâche
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -458,7 +456,7 @@ Imprimerie Ogooué`
                             </Button>
                           )}
                           
-                          {isAdmin && (
+                          {(isAdmin || tache.createur === user?.email) && (
                             <>
                               <Button variant="ghost" size="icon" onClick={() => { setEditingTache(tache); setFormData(tache); setShowForm(true); }}>
                                 <Edit className="w-4 h-4" />
