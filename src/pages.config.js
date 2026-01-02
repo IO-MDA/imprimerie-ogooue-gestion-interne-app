@@ -4,6 +4,7 @@ import Bilans from './pages/Bilans';
 import CalendrierTaches from './pages/CalendrierTaches';
 import Catalogue from './pages/Catalogue';
 import Clients from './pages/Clients';
+import Commandes from './pages/Commandes';
 import Dashboard from './pages/Dashboard';
 import DemandeModification from './pages/DemandeModification';
 import DemandesModification from './pages/DemandesModification';
@@ -23,11 +24,10 @@ import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
+import StatsPointage from './pages/StatsPointage';
 import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
-import StatsPointage from './pages/StatsPointage';
-import Commandes from './pages/Commandes';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +38,7 @@ export const PAGES = {
     "CalendrierTaches": CalendrierTaches,
     "Catalogue": Catalogue,
     "Clients": Clients,
+    "Commandes": Commandes,
     "Dashboard": Dashboard,
     "DemandeModification": DemandeModification,
     "DemandesModification": DemandesModification,
@@ -57,11 +58,10 @@ export const PAGES = {
     "Prospection": Prospection,
     "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
+    "StatsPointage": StatsPointage,
     "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
-    "StatsPointage": StatsPointage,
-    "Commandes": Commandes,
 }
 
 export const pagesConfig = {

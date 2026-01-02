@@ -26,6 +26,7 @@ import DemandeClientForm from '@/components/portail/DemandeClientForm';
 import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
 import SuggestionsIA from '@/components/catalogue/SuggestionsIA';
+import HistoriqueCommande from '@/components/commandes/HistoriqueCommande';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -801,6 +802,12 @@ export default function PortailClient() {
                   ))}
                 </div>
               </div>
+
+              {selectedDocument.historique_statuts && (
+                <div className="border-t pt-4">
+                  <HistoriqueCommande commande={selectedDocument} />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
