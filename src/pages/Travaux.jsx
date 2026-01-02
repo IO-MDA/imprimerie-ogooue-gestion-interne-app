@@ -9,10 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { HardHat, Building2, UtensilsCrossed, Plus, TrendingUp, DollarSign, Calendar, Sparkles, FileText, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import moment from 'moment';
-import TravauxForm from '@/components/travaux/TravauxForm';
-import TravauxList from '@/components/travaux/TravauxList';
-import TravauxBilan from '@/components/travaux/TravauxBilan';
-import TravauxOptimisationIA from '@/components/travaux/TravauxOptimisationIA';
+import TravauxForm from '@/components/travaux/TravauxForm.jsx';
+import TravauxList from '@/components/travaux/TravauxList.jsx';
+import TravauxBilan from '@/components/travaux/TravauxBilan.jsx';
+import TravauxOptimisationIA from '@/components/travaux/TravauxOptimisationIA.jsx';
 
 export default function Travaux() {
   const [travaux, setTravaux] = useState([]);
