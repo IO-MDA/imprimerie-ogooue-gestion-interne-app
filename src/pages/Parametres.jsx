@@ -75,10 +75,16 @@ export default function Parametres() {
       toast.error('Veuillez entrer une adresse email');
       return;
     }
+
+    if (inviteRole === 'client' && !inviteNom) {
+      toast.error('Veuillez entrer le nom du client');
+      return;
+    }
     
     try {
       if (inviteRole === 'client') {
         // Invitation client via fonction dédiée
+        toast.info('Envoi de l\'invitation...');
         const response = await base44.functions.invoke('inviterClient', {
           email: inviteEmail,
           nom: inviteNom
@@ -86,23 +92,28 @@ export default function Parametres() {
         
         if (response.data.success) {
           toast.success(`Invitation client envoyée à ${inviteEmail}`);
+          setShowInvite(false);
+          setInviteEmail('');
+          setInviteNom('');
+          setInviteRole('user');
+          loadData();
         } else {
           toast.error(response.data.error || 'Erreur lors de l\'invitation');
         }
       } else {
         // Invitation employé (admin, manager, user)
+        toast.info('Envoi de l\'invitation...');
         await base44.users.inviteUser(inviteEmail, inviteRole);
         toast.success(`Invitation employé envoyée à ${inviteEmail}`);
+        setShowInvite(false);
+        setInviteEmail('');
+        setInviteNom('');
+        setInviteRole('user');
+        loadData();
       }
-      
-      setShowInvite(false);
-      setInviteEmail('');
-      setInviteNom('');
-      setInviteRole('user');
-      loadData();
     } catch (e) {
-      toast.error('Erreur lors de l\'invitation');
-      console.error(e);
+      toast.error(e.message || 'Erreur lors de l\'invitation');
+      console.error('Erreur invitation:', e);
     }
   };
 
@@ -616,7 +627,7 @@ export default function Parametres() {
               </Button>
               <Button 
                 onClick={handleInviteUser}
-                disabled={!inviteEmail || (inviteRole === 'client' && !inviteNom)}
+                disabled={!inviteEmail.trim() || (inviteRole === 'client' && !inviteNom.trim())}
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Envoyer l'invitation
