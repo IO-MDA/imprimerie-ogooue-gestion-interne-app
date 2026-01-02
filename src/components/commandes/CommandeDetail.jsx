@@ -23,24 +23,38 @@ export default function CommandeDetail({ commande, isAdmin, onUpdate, onClose })
 
   const handleSave = async () => {
     try {
-      const nouvelHistorique = {
-        statut: formData.statut,
-        date: new Date().toISOString(),
-        modifie_par: (await base44.auth.me()).full_name,
+      // Mettre à jour la commande et notifier le client
+      await base44.functions.invoke('notifierClientCommande', {
+        commandeId: commande.id,
+        nouveauStatut: formData.statut,
         commentaire: formData.commentaire_client
-      };
-
-      await base44.entities.Commande.update(commande.id, {
-        ...formData,
-        historique_statuts: [...(commande.historique_statuts || []), nouvelHistorique]
       });
 
-      toast.success('Commande mise à jour');
+      // Mettre à jour les autres champs
+      await base44.entities.Commande.update(commande.id, {
+        date_livraison_prevue: formData.date_livraison_prevue,
+        date_livraison_reelle: formData.date_livraison_reelle,
+        commentaire_interne: formData.commentaire_interne
+      });
+
+      // Si commande confirmée, mettre à jour le stock
+      if (formData.statut === 'confirmee' && commande.statut !== 'confirmee') {
+        try {
+          await base44.functions.invoke('mettreAJourStock', {
+            commandeId: commande.id
+          });
+        } catch (stockError) {
+          console.error('Erreur mise à jour stock:', stockError);
+        }
+      }
+
+      toast.success('Commande mise à jour et client notifié');
       setEditMode(false);
       onUpdate();
       onClose();
     } catch (e) {
       toast.error('Erreur lors de la mise à jour');
+      console.error(e);
     }
   };
 

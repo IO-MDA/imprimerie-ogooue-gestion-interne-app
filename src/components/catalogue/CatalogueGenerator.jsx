@@ -12,6 +12,10 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
   const [generating, setGenerating] = useState(false);
   const [generationType, setGenerationType] = useState('complet');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [template, setTemplate] = useState('moderne');
+  const [couleurPrimaire, setCouleurPrimaire] = useState('#0078d7');
+  const [includePromos, setIncludePromos] = useState(false);
+  const [includeNouveautes, setIncludeNouveautes] = useState(false);
 
   const categories = [...new Set(produits.map(p => p.categorie))];
 
@@ -35,6 +39,32 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         return;
       }
 
+      // Sections dynamiques
+      let sectionsSpeciales = {};
+      
+      if (includePromos) {
+        const produitsPromo = produitsToInclude.filter(p => p.prix_a_partir_de || (p.tags && p.tags.includes('promotion')));
+        if (produitsPromo.length > 0) {
+          sectionsSpeciales['Promotions & Offres Spéciales'] = produitsPromo;
+        }
+      }
+      
+      if (includeNouveautes) {
+        const dateLimit = new Date();
+        dateLimit.setMonth(dateLimit.getMonth() - 2);
+        const nouveautes = produitsToInclude.filter(p => new Date(p.created_date) > dateLimit);
+        if (nouveautes.length > 0) {
+          sectionsSpeciales['Nouveautés'] = nouveautes;
+        }
+      }
+
+      // Parse couleur
+      const rgbColor = {
+        r: parseInt(couleurPrimaire.slice(1, 3), 16),
+        g: parseInt(couleurPrimaire.slice(3, 5), 16),
+        b: parseInt(couleurPrimaire.slice(5, 7), 16)
+      };
+
       // Create PDF with professional layout
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -57,7 +87,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       };
 
       // COVER PAGE
-      pdf.setFillColor(0, 120, 215);
+      pdf.setFillColor(rgbColor.r, rgbColor.g, rgbColor.b);
       pdf.rect(0, 0, pageWidth, pageHeight / 2, 'F');
       
       // Logo on cover (centered, not overlapping text)
@@ -103,9 +133,84 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         produitsParCategorie[p.categorie].push(p);
       });
 
-      // Products by category (no table of contents, direct to products)
+      // Sections spéciales d'abord
       let isFirstCategory = true;
       
+      for (const [sectionName, produitsSection] of Object.entries(sectionsSpeciales)) {
+        if (!isFirstCategory) {
+          pdf.addPage();
+        } else {
+          pdf.addPage();
+        }
+        isFirstCategory = false;
+        
+        let yPos = margin + 5;
+        
+        // Section header (avec étoile pour les promotions)
+        pdf.setFillColor(rgbColor.r, rgbColor.g, rgbColor.b);
+        pdf.rect(0, yPos, pageWidth, 12, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        const headerText = sectionName.includes('Promotion') ? '⭐ ' + sectionName : sectionName;
+        pdf.text(headerText, pageWidth / 2, yPos + 8, { align: 'center' });
+        
+        yPos += 20;
+        
+        for (let i = 0; i < produitsSection.length; i++) {
+          const produit = produitsSection[i];
+          const cardHeight = 45;
+          
+          if (yPos + cardHeight > pageHeight - 25) {
+            addFooter();
+            pdf.addPage();
+            yPos = margin + 5;
+          }
+          
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.3);
+          pdf.rect(margin, yPos, contentWidth, cardHeight);
+          
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(margin + 3, yPos + 3, 28, 28, 'F');
+          pdf.setFontSize(7);
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('PHOTO', margin + 17, yPos + 18, { align: 'center' });
+          
+          const textStartX = margin + 34;
+          const textWidth = contentWidth - 37;
+          
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(11);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(produit.nom, textStartX, yPos + 8);
+          
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          const descLines = pdf.splitTextToSize(produit.description_courte || '', textWidth);
+          pdf.text(descLines.slice(0, 2), textStartX, yPos + 14);
+          
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
+          const prix = new Intl.NumberFormat('fr-FR').format(Math.round(produit.prix_unitaire || 0));
+          const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
+          pdf.text(prixText, textStartX, yPos + 30);
+          
+          if (produit.delai_estime) {
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`Délai: ${produit.delai_estime}`, textStartX, yPos + 37);
+          }
+          
+          yPos += cardHeight + 3;
+        }
+        
+        addFooter();
+      }
+      
+      // Products by category (no table of contents, direct to products)
       for (const [categorie, produitsCategorie] of Object.entries(produitsParCategorie)) {
         if (!isFirstCategory) {
           pdf.addPage();
@@ -117,7 +222,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
         let yPos = margin + 5;
         
         // Category header (compact)
-        pdf.setFillColor(0, 120, 215);
+        pdf.setFillColor(rgbColor.r, rgbColor.g, rgbColor.b);
         pdf.rect(0, yPos, pageWidth, 12, 'F');
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(14);
@@ -170,7 +275,7 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           // Price (prominent)
           pdf.setFontSize(12);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(0, 120, 215);
+          pdf.setTextColor(rgbColor.r, rgbColor.g, rgbColor.b);
           const prix = new Intl.NumberFormat('fr-FR').format(Math.round(produit.prix_unitaire || 0));
           const prixText = `${prix} FCFA${produit.prix_a_partir_de ? ' (à partir de)' : ''}`;
           pdf.text(prixText, textStartX, yPos + 30);
@@ -240,6 +345,54 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
           </Select>
         </div>
       )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Couleur principale</Label>
+          <Input
+            type="color"
+            value={couleurPrimaire}
+            onChange={(e) => setCouleurPrimaire(e.target.value)}
+            className="h-10"
+          />
+        </div>
+        <div>
+          <Label>Style</Label>
+          <Select value={template} onValueChange={setTemplate}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="moderne">Moderne</SelectItem>
+              <SelectItem value="classique">Classique</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Sections spéciales</Label>
+        <div className="flex items-center gap-2">
+          <Checkbox 
+            checked={includePromos} 
+            onCheckedChange={setIncludePromos}
+            id="promos"
+          />
+          <label htmlFor="promos" className="text-sm cursor-pointer">
+            Inclure les promotions en première page
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox 
+            checked={includeNouveautes} 
+            onCheckedChange={setIncludeNouveautes}
+            id="nouveautes"
+          />
+          <label htmlFor="nouveautes" className="text-sm cursor-pointer">
+            Inclure les nouveautés (derniers 2 mois)
+          </label>
+        </div>
+      </div>
 
       <div className="bg-blue-50 p-4 rounded-lg">
         <p className="text-sm text-blue-900">
