@@ -36,6 +36,12 @@ export default function PortailClient() {
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [produitsCatalogue, setProduitsCatalogue] = useState([]);
   const [catalogueSearch, setCatalogueSearch] = useState('');
+  const [profileForm, setProfileForm] = useState({
+    nom: '',
+    telephone: '',
+    adresse: '',
+    type: 'particulier'
+  });
 
   useEffect(() => {
     loadData();
@@ -46,6 +52,12 @@ export default function PortailClient() {
     try {
       const userData = await base44.auth.me();
       setUser(userData);
+      setProfileForm({
+        nom: userData?.full_name || '',
+        telephone: '',
+        adresse: '',
+        type: 'particulier'
+      });
 
       // Find client by email
       const clients = await base44.entities.Client.filter({ email: userData.email });
@@ -126,13 +138,6 @@ export default function PortailClient() {
   };
 
   if (!client) {
-    const [profileForm, setProfileForm] = useState({
-      nom: user?.full_name || '',
-      telephone: '',
-      adresse: '',
-      type: 'particulier'
-    });
-
     return (
       <div className="max-w-2xl mx-auto mt-12">
         <Card className="border-0 shadow-xl">
