@@ -324,7 +324,7 @@ export default function Parametres() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        {u.isClient ? (
+                        {u.isClient && u.role === 'user' ? (
                           <Badge className="bg-green-100 text-green-700">
                             <Shield className="w-3 h-3 mr-1" />
                             Client
