@@ -382,16 +382,6 @@ export default function PortailClient() {
           </>
         )}
 
-        {activeTab === 'catalogue' && (
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
-          <TabsTrigger value="commandes">Commandes</TabsTrigger>
-          <TabsTrigger value="devis">Devis</TabsTrigger>
-          <TabsTrigger value="factures">Factures</TabsTrigger>
-          <TabsTrigger value="projets">Projets</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
-        </TabsList>
-
         {activeTab === 'commandes' && (
           <div className="space-y-4">
           {commandes.length === 0 ? (
@@ -454,7 +444,8 @@ export default function PortailClient() {
               </Card>
             ))
           )}
-        </TabsContent>
+        </div>
+        )}
 
         {activeTab === 'catalogue' && (
           <div className="space-y-4">
@@ -562,6 +553,7 @@ export default function PortailClient() {
               ))}
             </div>
           )}
+          </div>
         )}
 
         {activeTab === 'demandes' && (
@@ -623,8 +615,8 @@ export default function PortailClient() {
           </div>
         )}
 
-        {/* Devis Tab */}
-        <TabsContent value="devis" className="space-y-4">
+        {activeTab === 'devis' && (
+          <div className="space-y-4">
           {devis.length === 0 ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="py-16 text-center">
@@ -679,6 +671,7 @@ export default function PortailClient() {
               </Card>
             ))
           )}
+          </div>
         )}
 
         {activeTab === 'factures' && (
@@ -816,7 +809,11 @@ export default function PortailClient() {
               );
             })
           )}
+          </div>
         )}
+
+        {activeTab === 'projets' && (
+          <div className="space-y-4">
           {projets.length === 0 ? (
             <Card className="border-0 shadow-lg">
               <CardContent className="py-16 text-center">
