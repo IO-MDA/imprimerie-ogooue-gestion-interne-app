@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, AlertCircle, Calendar, User, Plus, TrendingDown } from 'lucide-react';
+import { DollarSign, AlertCircle, Calendar, User, Plus, TrendingDown, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import moment from 'moment';
+import { formatMontant } from '@/components/utils/formatMontant.jsx';
 
 export default function Avances() {
   const [avances, setAvances] = useState([]);
@@ -24,13 +25,15 @@ export default function Avances() {
   
   const [formData, setFormData] = useState({
     type_avance: 'salaire',
-    beneficiaire: '',
-    beneficiaire_email: '',
+    employe_id: '',
+    nom_employe: '',
+    email_employe: '',
     montant: '',
     date_avance: moment().format('YYYY-MM-DD'),
-    mois_concerne: moment().format('YYYY-MM'),
+    mois_comptable: moment().format('YYYY-MM'),
     commentaire: '',
-    charge_fixe_id: ''
+    charge_fixe_id: '',
+    statut: 'validee'
   });
 
   useEffect(() => {
@@ -59,35 +62,53 @@ export default function Avances() {
 
   const handleSave = async () => {
     try {
+      if (!formData.employe_id || !formData.montant) {
+        toast.error('Veuillez remplir tous les champs obligatoires');
+        return;
+      }
+
       // Find matching ChargeFixe
       let chargeFixeId = formData.charge_fixe_id;
-      if (!chargeFixeId && formData.beneficiaire) {
+      if (!chargeFixeId && formData.nom_employe) {
         const matchingCharge = chargesFixes.find(c => 
-          c.beneficiaire === formData.beneficiaire && c.active
+          c.beneficiaire === formData.nom_employe && c.active && c.type === 'salaire'
         );
         chargeFixeId = matchingCharge?.id;
       }
 
       await base44.entities.Avance.create({
-        ...formData,
+        employe_id: formData.employe_id,
+        nom_employe: formData.nom_employe,
+        email_employe: formData.email_employe,
+        type_avance: formData.type_avance,
         montant: parseFloat(formData.montant),
-        charge_fixe_id: chargeFixeId
+        date_avance: formData.date_avance,
+        mois_comptable: formData.mois_comptable,
+        commentaire: formData.commentaire,
+        charge_fixe_id: chargeFixeId,
+        statut: 'validee',
+        cree_par: user.id,
+        cree_par_nom: user.full_name
       });
-      toast.success('Avance enregistrée et synchronisée avec les charges');
+      
+      toast.success('Avance enregistrée avec succès');
       setShowForm(false);
       setFormData({
         type_avance: 'salaire',
-        beneficiaire: '',
-        beneficiaire_email: '',
+        employe_id: '',
+        nom_employe: '',
+        email_employe: '',
         montant: '',
         date_avance: moment().format('YYYY-MM-DD'),
-        mois_concerne: moment().format('YYYY-MM'),
+        mois_comptable: moment().format('YYYY-MM'),
         commentaire: '',
-        charge_fixe_id: ''
+        charge_fixe_id: '',
+        statut: 'validee'
       });
       loadData();
     } catch (e) {
       toast.error('Erreur lors de l\'enregistrement');
+      console.error(e);
     }
   };
 
@@ -100,37 +121,63 @@ export default function Avances() {
       );
       setFormData({
         ...formData,
-        beneficiaire: selectedUser.full_name,
-        beneficiaire_email: selectedUser.email,
+        employe_id: selectedUser.id,
+        nom_employe: selectedUser.full_name,
+        email_employe: selectedUser.email,
         charge_fixe_id: matchingCharge?.id || ''
       });
     }
   };
 
+  const handleValiderAvance = async (avanceId) => {
+    try {
+      await base44.entities.Avance.update(avanceId, { statut: 'validee' });
+      toast.success('Avance validée');
+      loadData();
+    } catch (e) {
+      toast.error('Erreur lors de la validation');
+    }
+  };
+
+  const handleAnnulerAvance = async (avanceId) => {
+    if (!confirm('Annuler cette avance ?')) return;
+    try {
+      await base44.entities.Avance.update(avanceId, { statut: 'annulee' });
+      toast.success('Avance annulée');
+      loadData();
+    } catch (e) {
+      toast.error('Erreur lors de l\'annulation');
+    }
+  };
+
   const avancesMois = avances.filter(a => 
-    moment(a.date_avance).format('YYYY-MM') === selectedMonth && a.statut === 'versee'
+    a.mois_comptable === selectedMonth && (a.statut === 'validee' || a.statut === 'deduite')
   );
 
-  const avancesParBeneficiaire = {};
+  // Grouper par employé
+  const avancesParEmploye = {};
   avancesMois.forEach(a => {
-    if (!avancesParBeneficiaire[a.beneficiaire]) {
-      avancesParBeneficiaire[a.beneficiaire] = {
-        nom: a.beneficiaire,
+    const key = a.employe_id || a.nom_employe;
+    if (!avancesParEmploye[key]) {
+      avancesParEmploye[key] = {
+        employe_id: a.employe_id,
+        nom: a.nom_employe,
+        email: a.email_employe,
         total: 0,
         avances: []
       };
     }
-    avancesParBeneficiaire[a.beneficiaire].total += a.montant;
-    avancesParBeneficiaire[a.beneficiaire].avances.push(a);
+    avancesParEmploye[key].total += a.montant;
+    avancesParEmploye[key].avances.push(a);
   });
 
   const chargesAvecAvances = chargesFixes
     .filter(c => c.active && c.type === 'salaire')
     .map(charge => {
       const avancesCharge = avances.filter(a => 
-        a.beneficiaire === charge.beneficiaire &&
-        a.mois_concerne === selectedMonth &&
-        a.statut === 'versee'
+        a.nom_employe === charge.beneficiaire &&
+        a.mois_comptable === selectedMonth &&
+        (a.statut === 'validee' || a.statut === 'deduite')
       );
       const totalAvances = avancesCharge.reduce((sum, a) => sum + a.montant, 0);
       const resteAPayer = charge.montant_mensuel - totalAvances;
@@ -193,7 +240,7 @@ export default function Avances() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Total avances</p>
-                <p className="text-xl font-bold text-slate-900">{totalAvances.toLocaleString()} F</p>
+                <p className="text-xl font-bold text-slate-900">{formatMontant(totalAvances)} F</p>
               </div>
             </div>
           </CardContent>
@@ -207,7 +254,7 @@ export default function Avances() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Reste à payer</p>
-                <p className="text-xl font-bold text-slate-900">{totalResteAPayer.toLocaleString()} F</p>
+                <p className="text-xl font-bold text-slate-900">{formatMontant(totalResteAPayer)} F</p>
               </div>
             </div>
           </CardContent>
@@ -220,26 +267,32 @@ export default function Avances() {
                 <User className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">Bénéficiaires</p>
-                <p className="text-xl font-bold text-slate-900">{Object.keys(avancesParBeneficiaire).length}</p>
+                <p className="text-xs text-slate-500">Employés concernés</p>
+                <p className="text-xl font-bold text-slate-900">{Object.keys(avancesParEmploye).length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Tableau des employés avec avances */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Charges avec avances</CardTitle>
+          <CardTitle>Détail par employé - {moment(selectedMonth).format('MMMM YYYY')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {chargesAvecAvances.map(charge => (
               <div key={charge.id} className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="font-semibold text-slate-900">{charge.beneficiaire}</p>
-                    <p className="text-sm text-slate-500">{charge.libelle}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{charge.beneficiaire}</p>
+                      <p className="text-xs text-slate-500">{charge.libelle}</p>
+                    </div>
                   </div>
                   <Badge className={
                     charge.statut === 'solde' ? 'bg-emerald-100 text-emerald-700' :
@@ -251,35 +304,74 @@ export default function Avances() {
                      'En attente'}
                   </Badge>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-slate-500">Montant total</p>
-                    <p className="font-medium">{charge.montant_mensuel.toLocaleString()} F</p>
+                
+                <div className="grid grid-cols-3 gap-4 text-sm mb-3">
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-slate-500 text-xs mb-1">Salaire brut</p>
+                    <p className="font-bold text-slate-900">{formatMontant(charge.montant_mensuel)} F</p>
                   </div>
-                  <div>
-                    <p className="text-slate-500">Avances versées</p>
-                    <p className="font-medium text-amber-600">{charge.totalAvances.toLocaleString()} F</p>
+                  <div className="p-3 bg-amber-50 rounded-lg">
+                    <p className="text-slate-500 text-xs mb-1">Avances versées</p>
+                    <p className="font-bold text-amber-700">{formatMontant(charge.totalAvances)} F</p>
                   </div>
-                  <div>
-                    <p className="text-slate-500">Reste à payer</p>
-                    <p className="font-medium text-rose-600">{charge.resteAPayer.toLocaleString()} F</p>
+                  <div className="p-3 bg-rose-50 rounded-lg">
+                    <p className="text-slate-500 text-xs mb-1">Reste à payer</p>
+                    <p className="font-bold text-rose-700">{formatMontant(charge.resteAPayer)} F</p>
                   </div>
                 </div>
+                
                 {charge.avances.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
-                    <p className="text-xs text-slate-500 mb-2">Détail des avances:</p>
-                    {charge.avances.map(a => (
-                      <div key={a.id} className="flex items-center justify-between text-xs py-1">
-                        <span>{moment(a.date_avance).format('DD/MM/YYYY')}</span>
-                        <span className="font-medium">{a.montant.toLocaleString()} F</span>
-                      </div>
-                    ))}
+                    <p className="text-xs font-semibold text-slate-700 mb-2">Historique des avances du mois:</p>
+                    <div className="space-y-1">
+                      {charge.avances.map(a => (
+                        <div key={a.id} className="flex items-center justify-between p-2 bg-white rounded text-xs">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span className="text-slate-700">{moment(a.date_avance).format('DD/MM/YYYY')}</span>
+                            <Badge className={
+                              a.statut === 'validee' ? 'bg-emerald-100 text-emerald-700 text-xs' :
+                              a.statut === 'en_attente' ? 'bg-amber-100 text-amber-700 text-xs' :
+                              'bg-slate-100 text-slate-700 text-xs'
+                            }>
+                              {a.statut}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">{formatMontant(a.montant)} F</span>
+                            {isAdmin && a.statut === 'en_attente' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleValiderAvance(a.id)}
+                                  className="h-6 px-2"
+                                >
+                                  <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleAnnulerAvance(a.id)}
+                                  className="h-6 px-2"
+                                >
+                                  <XCircle className="w-3 h-3 text-rose-600" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
             {chargesAvecAvances.length === 0 && (
-              <p className="text-center text-slate-500 py-8">Aucune charge pour ce mois</p>
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500">Aucun employé avec salaire pour ce mois</p>
+              </div>
             )}
           </div>
         </CardContent>
@@ -317,17 +409,22 @@ export default function Avances() {
 
             {formData.type_avance === 'salaire' && (
               <div>
-                <Label>Employé</Label>
-                <Select onValueChange={handleUserSelect}>
+                <Label>Employé *</Label>
+                <Select onValueChange={handleUserSelect} value={formData.employe_id}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un employé" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                    {users.filter(u => u.role !== 'admin' || u.id === user?.id).map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.email})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {formData.employe_id && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Email: {formData.email_employe}
+                  </p>
+                )}
               </div>
             )}
 
@@ -385,11 +482,11 @@ export default function Avances() {
                 />
               </div>
               <div>
-                <Label>Mois concerné</Label>
+                <Label>Mois comptable *</Label>
                 <Input
                   type="month"
-                  value={formData.mois_concerne}
-                  onChange={(e) => setFormData({...formData, mois_concerne: e.target.value})}
+                  value={formData.mois_comptable}
+                  onChange={(e) => setFormData({...formData, mois_comptable: e.target.value})}
                 />
               </div>
             </div>
