@@ -352,50 +352,81 @@ Soyez précis et professionnel.`;
     setSendingEmail(true);
 
     try {
-      // Générer le PDF
-      const pdfData = await generatePDF();
-
-      // Créer le contenu HTML de l'email
       const mockupType = getCurrentMockupType();
-      let emailBody = `
-Bonjour ${clientName},
+      
+      // Créer le contenu HTML de l'email avec les images intégrées
+      let emailHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: white; padding: 30px; border: 1px solid #e2e8f0; }
+    .mockup-section { margin: 20px 0; }
+    .mockup-title { font-weight: bold; color: #2d3748; margin-bottom: 10px; }
+    .mockup-image { width: 100%; max-width: 500px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .specs { background: #f7fafc; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; color: #718096; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0;">IMPRIMERIE OGOOUÉ</h1>
+      <p style="margin: 5px 0 0 0;">Proposition de Mockup</p>
+    </div>
+    
+    <div class="content">
+      <p>Bonjour <strong>${clientName}</strong>,</p>
+      
+      <p>Nous vous remercions pour votre intérêt pour nos services d'impression personnalisée.</p>
+      
+      <div class="specs">
+        <p style="margin: 5px 0;"><strong>Type:</strong> ${mockupType.name}</p>
+        ${selectedColor ? `<p style="margin: 5px 0;"><strong>Couleur:</strong> ${selectedColor}</p>` : ''}
+        ${selectedSize ? `<p style="margin: 5px 0;"><strong>Taille:</strong> ${selectedSize}</p>` : ''}
+      </div>
+      
+      <p>Voici les propositions de mockup sous différents angles :</p>
+      
+      ${generatedMockups.map((mockup, idx) => `
+        <div class="mockup-section">
+          <p class="mockup-title">${idx + 1}. ${mockup.angle}</p>
+          <img src="${mockup.url}" alt="${mockup.angle}" class="mockup-image" />
+        </div>
+      `).join('')}
+      
+      <p style="margin-top: 30px;">N'hésitez pas à nous contacter pour toute question ou modification. Nous restons à votre disposition pour finaliser votre commande.</p>
+      
+      <div style="margin-top: 30px; padding: 15px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 5px;">
+        <p style="margin: 0;"><strong>📞 Tél:</strong> +241 060 44 46 34 / 074 42 41 42</p>
+        <p style="margin: 5px 0 0 0;"><strong>📧 Email:</strong> imprimerieogooue@gmail.com</p>
+        <p style="margin: 5px 0 0 0;"><strong>📍 Adresse:</strong> Carrefour Fina en Face de Finam, Moanda, Gabon</p>
+      </div>
+      
+      <p style="margin-top: 20px;">Cordialement,<br><strong>L'équipe Imprimerie Ogooué</strong></p>
+    </div>
 
-Nous vous remercions pour votre intérêt pour nos services.
-
-Veuillez trouver ci-joint la proposition de mockup pour votre projet :
-- Type: ${mockupType.name}
-${selectedColor ? `- Couleur: ${selectedColor}` : ''}
-${selectedSize ? `- Taille: ${selectedSize}` : ''}
-
-Les mockups sont présentés sous différents angles pour vous donner une meilleure vision du rendu final.
-
-Voici les aperçus :
-`;
-
-      // Ajouter les liens des mockups dans l'email
-      generatedMockups.forEach((mockup, idx) => {
-        emailBody += `\n${idx + 1}. ${mockup.angle}: ${mockup.url}`;
-      });
-
-      emailBody += `
-
-Le document PDF complet avec tous les mockups est également joint à cet email.
-
-N'hésitez pas à nous contacter pour toute question ou modification.
-
-Cordialement,
-L'équipe Imprimerie Ogooué
-Libreville, Gabon
-`;
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} Imprimerie Ogooué - Tous droits réservés</p>
+      <p style="margin-top: 5px;">RCCM: RG/FCV 2023A0407 | Moanda, Haut-Ogooué, Gabon</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
 
       await base44.integrations.Core.SendEmail({
         from_name: 'Imprimerie Ogooué',
         to: clientEmail,
-        subject: `Proposition de Mockup - ${mockupType.name}`,
-        body: emailBody
+        subject: `Proposition de Mockup - ${mockupType.name} - ${clientName}`,
+        body: emailHTML
       });
 
-      toast.success('Email envoyé avec succès!');
+      toast.success('Email envoyé avec succès au client!');
       setShowEmailDialog(false);
       setClientEmail('');
       setClientName('');

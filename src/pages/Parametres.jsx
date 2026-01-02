@@ -558,11 +558,12 @@ export default function Parametres() {
             </div>
             {inviteRole === 'client' && (
               <div>
-                <Label>Nom du client</Label>
+                <Label>Nom du client *</Label>
                 <Input 
                   value={inviteNom}
                   onChange={(e) => setInviteNom(e.target.value)}
-                  placeholder="Nom complet (optionnel)"
+                  placeholder="Nom complet"
+                  required
                 />
               </div>
             )}
@@ -613,7 +614,10 @@ export default function Parametres() {
               <Button variant="outline" onClick={() => setShowInvite(false)}>
                 Annuler
               </Button>
-              <Button onClick={handleInviteUser}>
+              <Button 
+                onClick={handleInviteUser}
+                disabled={!inviteEmail || (inviteRole === 'client' && !inviteNom)}
+              >
                 <Mail className="w-4 h-4 mr-2" />
                 Envoyer l'invitation
               </Button>
