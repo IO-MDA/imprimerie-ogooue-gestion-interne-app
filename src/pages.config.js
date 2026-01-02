@@ -20,9 +20,9 @@ import Projets from './pages/Projets';
 import Prospection from './pages/Prospection';
 import Rapports from './pages/Rapports';
 import RapportsJournaliers from './pages/RapportsJournaliers';
+import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import Travaux from './pages/Travaux';
-import TableauBordRH from './pages/TableauBordRH';
 import __Layout from './Layout.jsx';
 
 
@@ -49,9 +49,9 @@ export const PAGES = {
     "Prospection": Prospection,
     "Rapports": Rapports,
     "RapportsJournaliers": RapportsJournaliers,
+    "TableauBordRH": TableauBordRH,
     "Taches": Taches,
     "Travaux": Travaux,
-    "TableauBordRH": TableauBordRH,
 }
 
 export const pagesConfig = {
