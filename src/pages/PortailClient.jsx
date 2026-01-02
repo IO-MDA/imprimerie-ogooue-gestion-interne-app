@@ -1,33 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { 
   ShoppingBag, 
   FileText, 
-  MessageSquare,
-  Download,
-  Eye,
   Plus,
   Package,
-  Clock,
-  CheckCircle2,
   Search,
   Image as ImageIcon,
-  Truck,
-  MapPin
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  Eye,
+  Download
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
-import DemandeClientForm from '@/components/portail/DemandeClientForm';
 import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
-import SuggestionsIA from '@/components/catalogue/SuggestionsIA';
-import HistoriqueCommande from '@/components/commandes/HistoriqueCommande';
-import CatalogueGenerator from '@/components/catalogue/CatalogueGenerator';
+import ClientHeader from '@/components/client/ClientHeader';
+import BottomNav from '@/components/client/BottomNav';
+import WhatsAppButton from '@/components/client/WhatsAppButton';
+import DemandeForm from '@/components/client/DemandeForm';
+import TimelineStatut from '@/components/client/TimelineStatut';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -43,11 +43,11 @@ export default function PortailClient() {
   const [produitsCatalogue, setProduitsCatalogue] = useState([]);
   const [catalogueSearch, setCatalogueSearch] = useState('');
   const [selectedProduit, setSelectedProduit] = useState(null);
-  const [estimations, setEstimations] = useState({});
-  const [loadingEstimation, setLoadingEstimation] = useState({});
   const [commandes, setCommandes] = useState([]);
   const [tarifsClients, setTarifsClients] = useState([]);
-  const [showCatalogueGenerator, setShowCatalogueGenerator] = useState(false);
+  const [demandes, setDemandes] = useState([]);
+  const [activeTab, setActiveTab] = useState('accueil');
+  const [selectedDemande, setSelectedDemande] = useState(null);
   const [profileForm, setProfileForm] = useState({
     nom: '',
     email: '',
@@ -88,23 +88,23 @@ export default function PortailClient() {
 
       if (clientData) {
         // Load all related data
-        const [devisData, facturesData, projetsData, conversationsData, catalogueData, commandesData, tarifsData] = await Promise.all([
+        const [devisData, facturesData, projetsData, catalogueData, commandesData, tarifsData, demandesData] = await Promise.all([
           base44.entities.Devis.filter({ client_id: clientData.id }),
           base44.entities.Facture.filter({ client_id: clientData.id }),
           base44.entities.Projet.filter({ client_id: clientData.id }),
-          base44.entities.ConversationClient.filter({ client_id: clientData.id }),
           base44.entities.ProduitCatalogue.filter({ actif: true, visible_clients: true }),
           base44.entities.Commande.filter({ client_id: clientData.id }),
-          base44.entities.TarifsClients.filter({ client_id: clientData.id })
+          base44.entities.TarifsClients.filter({ client_id: clientData.id }),
+          base44.entities.DemandeClient.filter({ client_id: clientData.id })
         ]);
 
         setDevis(devisData);
         setFactures(facturesData);
         setProjets(projetsData);
-        setConversations(conversationsData);
         setProduitsCatalogue(catalogueData);
         setCommandes(commandesData);
         setTarifsClients(tarifsData);
+        setDemandes(demandesData);
       }
     } catch (e) {
       console.error('Error loading data:', e);
