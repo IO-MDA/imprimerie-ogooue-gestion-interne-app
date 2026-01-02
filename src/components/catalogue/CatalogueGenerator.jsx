@@ -105,21 +105,21 @@ export default function CatalogueGenerator({ produits, selectedProduits, onClose
       // IA de mise en page automatique selon nombre de produits
       const totalProduits = produitsToInclude.length;
       let layoutConfig = {
-        cardsPerPage: 5,
         cardHeight: 45,
         descriptionLines: 2,
         fontSize: 8,
-        titleFontSize: 11
+        titleFontSize: 11,
+        imageSize: 28
       };
 
       if (totalProduits <= 6) {
-        layoutConfig = { cardsPerPage: 4, cardHeight: 60, descriptionLines: 3, fontSize: 9, titleFontSize: 13 };
+        layoutConfig = { cardHeight: 55, descriptionLines: 3, fontSize: 9, titleFontSize: 13, imageSize: 32 };
       } else if (totalProduits <= 20) {
-        layoutConfig = { cardsPerPage: 5, cardHeight: 45, descriptionLines: 2, fontSize: 8, titleFontSize: 11 };
+        layoutConfig = { cardHeight: 42, descriptionLines: 2, fontSize: 8, titleFontSize: 11, imageSize: 28 };
       } else if (totalProduits <= 60) {
-        layoutConfig = { cardsPerPage: 7, cardHeight: 35, descriptionLines: 2, fontSize: 7, titleFontSize: 10 };
+        layoutConfig = { cardHeight: 35, descriptionLines: 2, fontSize: 7, titleFontSize: 10, imageSize: 24 };
       } else {
-        layoutConfig = { cardsPerPage: 9, cardHeight: 28, descriptionLines: 1, fontSize: 6.5, titleFontSize: 9 };
+        layoutConfig = { cardHeight: 30, descriptionLines: 1, fontSize: 6.5, titleFontSize: 9, imageSize: 20 };
       }
 
       // Create PDF with professional layout
