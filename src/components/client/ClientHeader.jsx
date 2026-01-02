@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import NotificationCenter from '@/components/client/NotificationCenter';
 
-export default function ClientHeader({ client, notifications = 0 }) {
+export default function ClientHeader({ client, user, notifications = 0 }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -49,14 +50,7 @@ export default function ClientHeader({ client, notifications = 0 }) {
           {/* Actions */}
           <div className="flex items-center gap-2">
             {/* Notifications */}
-            <button className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5 text-slate-600" />
-              {notifications > 0 && (
-                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs">
-                  {notifications}
-                </Badge>
-              )}
-            </button>
+            {user && <NotificationCenter user={user} />}
 
             {/* User menu */}
             <DropdownMenu>

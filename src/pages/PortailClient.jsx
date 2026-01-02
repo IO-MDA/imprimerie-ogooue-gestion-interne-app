@@ -294,8 +294,8 @@ export default function PortailClient() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 pb-20 md:pb-6">
       {/* Header */}
       <ClientHeader 
-        client={client} 
-        notifications={demandes.filter(d => d.statut === 'repondu').length + facturesImpayees}
+        client={client}
+        user={user}
       />
 
       {/* WhatsApp Button */}
