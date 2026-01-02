@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from 'sonner';
 import DemandeClientForm from '@/components/portail/DemandeClientForm';
 import moment from 'moment';
+import { formatMontant } from '@/components/utils/formatMontant.jsx';
 
 export default function PortailClient() {
   const [user, setUser] = useState(null);
@@ -363,7 +364,7 @@ export default function PortailClient() {
                     
                     <div className="flex items-baseline gap-2 mb-3">
                       <p className="text-lg font-bold text-blue-600">
-                        {produit.prix_unitaire.toLocaleString()} FCFA
+                        {formatMontant(produit.prix_unitaire)} F
                       </p>
                       {produit.prix_a_partir_de && (
                         <span className="text-xs text-slate-500">à partir de</span>
@@ -423,7 +424,7 @@ export default function PortailClient() {
                           {d.lignes?.length || 0} article(s)
                         </div>
                         <div className="text-sm font-semibold text-slate-900">
-                          Total: {(d.total || 0).toLocaleString()} FCFA
+                          Total: {formatMontant(d.total || 0)} F
                         </div>
                       </div>
                     </div>
@@ -486,7 +487,7 @@ export default function PortailClient() {
                           {f.lignes?.length || 0} article(s)
                         </div>
                         <div className="text-sm font-semibold text-slate-900">
-                          Total: {(f.total || 0).toLocaleString()} FCFA
+                          Total: {formatMontant(f.total || 0)} F
                         </div>
                       </div>
                     </div>
@@ -651,7 +652,7 @@ export default function PortailClient() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Total</p>
-                  <p className="font-medium">{(selectedDocument.total || 0).toLocaleString()} FCFA</p>
+                  <p className="font-medium">{formatMontant(selectedDocument.total || 0)} F</p>
                 </div>
               </div>
               
@@ -663,10 +664,10 @@ export default function PortailClient() {
                       <div>
                         <p className="font-medium">{ligne.designation}</p>
                         <p className="text-sm text-slate-500">
-                          {ligne.quantite} x {ligne.prix_unitaire?.toLocaleString()} FCFA
+                          {ligne.quantite} x {formatMontant(ligne.prix_unitaire)} F
                         </p>
                       </div>
-                      <p className="font-semibold">{ligne.montant?.toLocaleString()} FCFA</p>
+                      <p className="font-semibold">{formatMontant(ligne.montant)} F</p>
                     </div>
                   ))}
                 </div>
