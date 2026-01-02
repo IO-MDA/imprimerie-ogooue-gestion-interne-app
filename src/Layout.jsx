@@ -86,7 +86,7 @@ export default function Layout({ children, currentPageName }) {
   // Navigation selon le rôle (admin, manager, user/employe)
   const allNavigation = [
         { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
-        { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'] },
+        { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'], hideForClients: true },
         { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'manager', 'user'] },
         { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
         { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'manager', 'user'] },
@@ -120,7 +120,9 @@ export default function Layout({ children, currentPageName }) {
   // Filtrer selon le rôle et le type d'utilisateur
   const navigation = isClient 
     ? allNavigation.filter(item => item.href === 'PortailClient')
-    : allNavigation.filter(item => item.roles.includes(user?.role || 'user'));
+    : allNavigation.filter(item => 
+        item.roles.includes(user?.role || 'user') && !item.hideForClients
+      );
 
   const handleLogout = () => {
     base44.auth.logout();

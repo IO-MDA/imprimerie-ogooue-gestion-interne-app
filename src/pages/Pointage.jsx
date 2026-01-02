@@ -26,14 +26,30 @@ export default function Pointage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [pointagesData, usersData, userData] = await Promise.all([
-        base44.entities.Pointage.list('-date'),
-        base44.entities.User.list(),
-        base44.auth.me()
-      ]);
+      const userData = await base44.auth.me();
+      setUser(userData);
+      
+      // Vérifier si c'est un client (bloqué)
+      const clients = await base44.entities.Client.filter({ user_id: userData.id });
+      if (clients.length > 0) {
+        toast.error('Accès réservé aux employés');
+        window.location.href = '/PortailClient';
+        return;
+      }
+      
+      // Charger les pointages selon le rôle
+      let pointagesData;
+      if (userData.role === 'admin' || userData.role === 'manager') {
+        pointagesData = await base44.entities.Pointage.list('-date');
+      } else {
+        // Opérateur : voir uniquement ses propres pointages
+        pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id }, '-date');
+      }
+      
+      const usersData = await base44.entities.User.list();
+      
       setPointages(pointagesData);
       setUsers(usersData);
-      setUser(userData);
     } catch (e) {
       console.error('Error loading data:', e);
     } finally {
@@ -45,12 +61,16 @@ export default function Pointage() {
     try {
       const userData = await base44.auth.me();
       if (!userData) return;
+      
+      // Bloquer si client
+      const clients = await base44.entities.Client.filter({ user_id: userData.id });
+      if (clients.length > 0) return;
 
       const today = moment().format('YYYY-MM-DD');
-      const pointagesData = await base44.entities.Pointage.list();
+      const pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id });
       
       const pointageToday = pointagesData.find(p => 
-        p.employe_id === userData.id && p.date === today && p.statut === 'en_cours'
+        p.date === today && p.statut === 'en_cours'
       );
 
       if (!pointageToday) {
@@ -63,6 +83,7 @@ export default function Pointage() {
           statut: 'en_cours'
         });
         toast.success('Pointage d\'entrée enregistré');
+        loadData();
       }
     } catch (e) {
       console.error('Erreur pointage automatique:', e);
@@ -142,18 +163,21 @@ export default function Pointage() {
 
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'manager';
+  const isOperateur = user?.role === 'user';
 
   const today = moment().format('YYYY-MM-DD');
   const thisWeek = moment().startOf('week');
   const thisMonth = moment().startOf('month');
 
+  // Filtrage selon le rôle (admin/manager voient tout, opérateur voit ses propres)
   const filteredPointages = pointages.filter(p => {
-    if (!isAdmin && !isManager && p.employe_id !== user?.id) return false;
+    // Filtre par période
+    let matchPeriod = true;
+    if (activeTab === 'aujourd-hui') matchPeriod = p.date === today;
+    else if (activeTab === 'semaine') matchPeriod = moment(p.date).isSameOrAfter(thisWeek);
+    else if (activeTab === 'mois') matchPeriod = moment(p.date).format('YYYY-MM') === selectedMonth;
     
-    if (activeTab === 'aujourd-hui') return p.date === today;
-    if (activeTab === 'semaine') return moment(p.date).isSameOrAfter(thisWeek);
-    if (activeTab === 'mois') return moment(p.date).format('YYYY-MM') === selectedMonth;
-    return true;
+    return matchPeriod;
   });
 
   const pointageEnCours = pointages.find(p => 
@@ -196,9 +220,16 @@ export default function Pointage() {
                 <div>
                   <p className="font-semibold text-slate-900">Pointage en cours</p>
                   <p className="text-sm text-slate-600">Entrée: {pointageEnCours.heure_entree}</p>
+                  {!isOperateur && pointageEnCours.employe_nom && (
+                    <p className="text-xs text-slate-500">{pointageEnCours.employe_nom}</p>
+                  )}
                 </div>
               </div>
-              <Button onClick={() => handleSortie(pointageEnCours.id)} className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={() => handleSortie(pointageEnCours.id)} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isOperateur && pointageEnCours.employe_id !== user?.id}
+              >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Pointer la sortie
               </Button>
