@@ -29,9 +29,11 @@ export default function Pointage() {
       const userData = await base44.auth.me();
       setUser(userData);
       
-      // Vérifier si c'est un client (bloqué)
+      // Ne pas bloquer les admins/managers même s'ils ont un profil client de test
       const clients = await base44.entities.Client.filter({ user_id: userData.id });
-      if (clients.length > 0) {
+      const isRealClient = userData.role === 'user' && clients.length > 0;
+      
+      if (isRealClient) {
         toast.error('Accès réservé aux employés');
         window.location.href = '/PortailClient';
         return;
@@ -64,7 +66,8 @@ export default function Pointage() {
       if (!userData || userData.role === 'admin') return;
       
       const clients = await base44.entities.Client.filter({ user_id: userData.id });
-      if (clients.length > 0) return;
+      const isRealClient = userData.role === 'user' && clients.length > 0;
+      if (isRealClient) return;
 
       const today = moment().format('YYYY-MM-DD');
       const pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id });
@@ -92,17 +95,31 @@ export default function Pointage() {
   const handleEntree = async () => {
     try {
       const today = moment().format('YYYY-MM-DD');
+      
+      // Vérifier si pointage existe déjà pour aujourd'hui
+      const pointageExistant = pointages.find(p => 
+        p.employe_id === user.id && p.date === today
+      );
+      
+      if (pointageExistant) {
+        toast.error('Vous avez déjà pointé aujourd\'hui');
+        return;
+      }
+      
       await base44.entities.Pointage.create({
         employe_id: user.id,
-        employe_nom: user.full_name,
+        employe_nom: user.full_name || user.email,
         employe_email: user.email,
         date: today,
         heure_entree: moment().format('HH:mm'),
-        statut: 'en_cours'
+        statut: 'en_cours',
+        source: 'manuel'
       });
-      toast.success('Pointage d\'entrée enregistré');
-      loadData();
+      
+      toast.success('Pointage d\'entrée enregistré ✓');
+      await loadData();
     } catch (e) {
+      console.error('Erreur pointage entrée:', e);
       toast.error('Erreur lors du pointage d\'entrée');
     }
   };
