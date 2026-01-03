@@ -40,7 +40,8 @@ export default function Parametres() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     full_name: '',
-    role: 'user'
+    role: 'user',
+    account_type: 'employee' // 'employee' or 'client'
   });
   const [reseaux, setReseaux] = useState([]);
   const [showSocialForm, setShowSocialForm] = useState(false);
@@ -200,7 +201,8 @@ export default function Parametres() {
     setEditingUser(u);
     setEditForm({
       full_name: u.full_name || '',
-      role: u.role
+      role: u.role,
+      account_type: u.isClient ? 'client' : 'employee'
     });
     setShowEditDialog(true);
   };
@@ -209,10 +211,35 @@ export default function Parametres() {
     if (!editingUser) return;
 
     try {
-      await base44.entities.User.update(editingUser.id, {
-        full_name: editForm.full_name,
-        role: editForm.role
-      });
+      // Si le type de compte change vers Client
+      if (editForm.account_type === 'client') {
+        // Vérifier si un profil client existe déjà
+        const existingClients = await base44.entities.Client.filter({ user_id: editingUser.id });
+        
+        if (existingClients.length === 0) {
+          // Créer le profil client
+          await base44.entities.Client.create({
+            user_id: editingUser.id,
+            nom: editForm.full_name || editingUser.full_name || editingUser.email,
+            email: editingUser.email,
+            telephone: '',
+            type: 'particulier'
+          });
+        }
+        
+        // Mettre le rôle à 'user' pour un client
+        await base44.entities.User.update(editingUser.id, {
+          full_name: editForm.full_name,
+          role: 'user'
+        });
+      } else {
+        // Type = Employé : mettre à jour normalement avec le rôle choisi
+        await base44.entities.User.update(editingUser.id, {
+          full_name: editForm.full_name,
+          role: editForm.role
+        });
+      }
+      
       toast.success('Utilisateur modifié avec succès');
       setShowEditDialog(false);
       setEditingUser(null);
@@ -326,8 +353,8 @@ export default function Parametres() {
                       <div className="flex items-center gap-3">
                         {u.isClient && u.role === 'user' ? (
                           <Badge className="bg-green-100 text-green-700">
-                            <Shield className="w-3 h-3 mr-1" />
-                            Client
+                            <Users className="w-3 h-3 mr-1" />
+                            Client (portail)
                           </Badge>
                         ) : (
                           <Badge className={
@@ -336,7 +363,7 @@ export default function Parametres() {
                             'bg-slate-100 text-slate-700'
                           }>
                             <Shield className="w-3 h-3 mr-1" />
-                            {u.role === 'admin' ? 'Administrateur' : u.role === 'manager' ? 'Manager' : 'Employé'}
+                            {u.role === 'admin' ? 'Administrateur' : u.role === 'manager' ? 'Manager' : 'Employé'} (interne)
                           </Badge>
                         )}
                         <Button
@@ -671,34 +698,78 @@ export default function Parametres() {
                 placeholder="Nom complet"
               />
             </div>
+
             <div>
-              <Label>Rôle</Label>
-              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+              <Label>Type de compte</Label>
+              <Select 
+                value={editForm.account_type} 
+                onValueChange={(v) => setEditForm({ ...editForm, account_type: v })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">
+                  <SelectItem value="employee">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      Administrateur
+                      <Shield className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <p className="font-medium">Employé (accès interne)</p>
+                        <p className="text-xs text-slate-500">Back-office complet</p>
+                      </div>
                     </div>
                   </SelectItem>
-                  <SelectItem value="manager">
+                  <SelectItem value="client">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      Manager
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="user">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-slate-500"></div>
-                      Employé/Opérateur
+                      <Users className="w-4 h-4 text-green-600" />
+                      <div>
+                        <p className="font-medium">Client (portail client)</p>
+                        <p className="text-xs text-slate-500">Catalogue, commandes, factures</p>
+                      </div>
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {editForm.account_type === 'employee' && (
+              <div>
+                <Label>Rôle interne</Label>
+                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        Administrateur
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="manager">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        Manager
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="user">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                        Employé/Opérateur
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {editForm.account_type === 'client' && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✅ Un profil client sera créé automatiquement. L'utilisateur aura accès au portail client uniquement.
+                </p>
+              </div>
+            )}
+
             <div className="p-3 bg-slate-50 rounded-lg">
               <p className="text-xs text-slate-600">
                 <strong>Email:</strong> {editingUser?.email}
