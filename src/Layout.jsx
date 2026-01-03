@@ -58,8 +58,11 @@ export default function Layout({ children, currentPageName }) {
       const clients = await base44.entities.Client.filter({ user_id: userData.id });
       if (clients.length > 0) {
         setClient(clients[0]);
-        // Seuls les users avec profil client sont considérés comme clients purs
-        if (userData.role === 'user') {
+        // Un client pur = role 'user' + profil client + PAS d'accès admin/manager
+        // On considère qu'un user avec profil client est un vrai client uniquement s'il n'a pas de rôle privilégié
+        const isRealClient = userData.role === 'user' && clients.length > 0;
+
+        if (isRealClient) {
           setIsClient(true);
           // Rediriger vers le portail client si pas déjà sur cette page
           if (currentPageName !== 'PortailClient' && currentPageName !== 'InscriptionClient') {
@@ -95,7 +98,6 @@ export default function Layout({ children, currentPageName }) {
             { name: 'Commandes', href: 'Commandes', icon: Package, roles: ['admin', 'manager', 'user'] },
             { name: 'Demandes RH', href: 'DemandesRH', icon: FileCheck, roles: ['admin', 'manager', 'user'], hideForClients: true },
             { name: 'Modèles documents', href: 'ModelesDocuments', icon: FileText, roles: ['admin'] },
-            { name: 'Portail client', href: 'PortailClient', icon: Users, roles: ['admin', 'manager'] },
               { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
               { name: 'Clients', href: 'Clients', icon: Users, roles: ['admin', 'manager', 'user'] },
               { name: 'Catalogue produits', href: 'Catalogue', icon: Package, roles: ['admin', 'manager', 'user'] },
