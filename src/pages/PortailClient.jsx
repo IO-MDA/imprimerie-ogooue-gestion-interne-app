@@ -59,6 +59,9 @@ export default function PortailClient() {
     adresse: '',
     type: 'particulier'
   });
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -281,6 +284,70 @@ export default function PortailClient() {
     return produit.prix_unitaire;
   };
 
+  const handleDownloadFullCatalogue = async () => {
+    setPdfLoading(true);
+    try {
+      const response = await base44.functions.invoke('genererCatalogueClient', {
+        client_id: client.id,
+        produits: filteredCatalogue.map(p => p.id)
+      });
+
+      if (response.data.success && response.data.pdf_url) {
+        // Télécharger le PDF
+        const link = document.createElement('a');
+        link.href = response.data.pdf_url;
+        link.download = `Catalogue_Imprimerie_OGOOUE_${client.nom}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success('Catalogue téléchargé avec succès !');
+      } else {
+        throw new Error('Erreur lors de la génération');
+      }
+    } catch (error) {
+      toast.error('Impossible de générer le catalogue');
+      console.error(error);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleDownloadSelectedPDF = async () => {
+    if (selectedProducts.length === 0) {
+      toast.error('Veuillez sélectionner au moins un produit');
+      return;
+    }
+
+    setPdfLoading(true);
+    try {
+      const response = await base44.functions.invoke('genererCatalogueClient', {
+        client_id: client.id,
+        produits: selectedProducts
+      });
+
+      if (response.data.success && response.data.pdf_url) {
+        const link = document.createElement('a');
+        link.href = response.data.pdf_url;
+        link.download = `Selection_Produits_${client.nom}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success(`${selectedProducts.length} produit(s) exporté(s) en PDF !`);
+        setSelectionMode(false);
+        setSelectedProducts([]);
+      } else {
+        throw new Error('Erreur lors de la génération');
+      }
+    } catch (error) {
+      toast.error('Impossible de générer le PDF');
+      console.error(error);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   // Filter catalogue
   const filteredCatalogue = produitsCatalogue.filter(p => {
     if (!catalogueSearch) return true;
@@ -291,7 +358,7 @@ export default function PortailClient() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 pb-20 md:pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 pb-24 md:pb-6">
       {/* Header */}
       <ClientHeader 
         client={client}
@@ -486,26 +553,85 @@ export default function PortailClient() {
           <div className="space-y-4">
           <Card className="border-0 shadow-lg">
             <CardContent className="p-4">
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input
-                    placeholder="Rechercher un produit..."
-                    value={catalogueSearch}
-                    onChange={(e) => {
-                      setCatalogueSearch(e.target.value);
-                      setSelectedProduit(null);
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      placeholder="Rechercher..."
+                      value={catalogueSearch}
+                      onChange={(e) => {
+                        setCatalogueSearch(e.target.value);
+                        setSelectedProduit(null);
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button 
+                    size="sm"
+                    variant={selectionMode ? "default" : "outline"}
+                    onClick={() => {
+                      setSelectionMode(!selectionMode);
+                      setSelectedProducts([]);
                     }}
-                    className="pl-10"
-                  />
+                  >
+                    {selectionMode ? 'Annuler' : 'Sélectionner'}
+                  </Button>
                 </div>
-                <Button 
-                  onClick={() => setShowCatalogueGenerator(true)}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Mon catalogue PDF
-                </Button>
+
+                {selectionMode && selectedProducts.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-blue-100 text-blue-700">
+                      {selectedProducts.length} sélectionné{selectedProducts.length > 1 ? 's' : ''}
+                    </Badge>
+                    <Button 
+                      size="sm"
+                      onClick={handleDownloadSelectedPDF}
+                      disabled={pdfLoading}
+                      className="bg-blue-600"
+                    >
+                      {pdfLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                          Génération...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3 h-3 mr-1" />
+                          PDF
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedProducts([])}
+                    >
+                      Tout désélectionner
+                    </Button>
+                  </div>
+                )}
+
+                {!selectionMode && (
+                  <Button 
+                    size="sm"
+                    onClick={handleDownloadFullCatalogue}
+                    disabled={pdfLoading}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 w-full"
+                  >
+                    {pdfLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Génération en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Mon catalogue PDF
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -527,65 +653,92 @@ export default function PortailClient() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {filteredCatalogue.map(produit => (
-                <Card key={produit.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                  <CardContent className="p-4">
-                    {produit.photos && produit.photos.length > 0 ? (
-                      <img
-                        src={produit.photos[0]}
-                        alt={produit.nom}
-                        className="w-full h-40 object-cover rounded-lg mb-3"
-                      />
-                    ) : (
-                      <div className="w-full h-40 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
-                        <ImageIcon className="w-12 h-12 text-slate-300" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+              {filteredCatalogue.map(produit => {
+                const isSelected = selectedProducts.includes(produit.id);
+
+                return (
+                  <Card 
+                    key={produit.id} 
+                    className={`border-0 shadow-lg hover:shadow-xl transition-all relative ${
+                      isSelected ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                    onClick={() => {
+                      if (selectionMode) {
+                        if (isSelected) {
+                          setSelectedProducts(prev => prev.filter(id => id !== produit.id));
+                        } else {
+                          setSelectedProducts(prev => [...prev, produit.id]);
+                        }
+                      }
+                    }}
+                  >
+                    <CardContent className="p-3">
+                      {selectionMode && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                            isSelected ? 'bg-blue-600' : 'bg-white border-2 border-slate-300'
+                          }`}>
+                            {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+                          </div>
+                        </div>
+                      )}
+
+                      {produit.photos && produit.photos.length > 0 ? (
+                        <img
+                          src={produit.photos[0]}
+                          alt={produit.nom}
+                          className="w-full aspect-square object-cover rounded-lg mb-2"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full aspect-square bg-slate-100 rounded-lg mb-2 flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-slate-300" />
+                        </div>
+                      )}
+
+                      <Badge className="mb-1 text-xs bg-blue-100 text-blue-700">
+                        {produit.categorie}
+                      </Badge>
+
+                      <h3 className="font-semibold text-sm text-slate-900 mb-1 line-clamp-2 leading-tight">
+                        {produit.nom}
+                      </h3>
+
+                      <div className="flex items-baseline gap-1 mb-2">
+                        <p className="text-base font-bold text-blue-600">
+                          {formatMontant(getPrixClient(produit))} F
+                        </p>
+                        {getPrixClient(produit) < produit.prix_unitaire && (
+                          <Badge className="bg-emerald-100 text-emerald-700 text-xs px-1 py-0">
+                            -
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                    
-                    <Badge className="mb-2 bg-blue-100 text-blue-700">
-                      {produit.categorie}
-                    </Badge>
-                    
-                    <h3 className="font-semibold text-slate-900 mb-2">{produit.nom}</h3>
-                    
-                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                      {produit.description_courte}
-                    </p>
-                    
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <p className="text-lg font-bold text-blue-600">
-                        {formatMontant(getPrixClient(produit))} F
-                      </p>
-                      {produit.prix_a_partir_de && (
-                        <span className="text-xs text-slate-500">à partir de</span>
+
+                      {produit.delai_estime && (
+                        <p className="text-xs text-slate-500 mb-2">
+                          ⏱ {produit.delai_estime}
+                        </p>
                       )}
-                      {getPrixClient(produit) < produit.prix_unitaire && (
-                        <Badge className="bg-emerald-100 text-emerald-700 text-xs">
-                          Prix spécial
-                        </Badge>
+
+                      {!selectionMode && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-xs py-2"
+                          onClick={() => {
+                            setSelectedProduit(produit);
+                            setShowDemandeForm(true);
+                          }}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Devis
+                        </Button>
                       )}
-                    </div>
-                    
-                    {produit.delai_estime && (
-                      <p className="text-xs text-slate-500 mb-3">
-                        ⏱ Délai: {produit.delai_estime}
-                      </p>
-                    )}
-                    
-                    <Button
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
-                      onClick={() => {
-                        setSelectedProduit(produit);
-                        setShowDemandeForm(true);
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Demander un devis
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
           </div>
