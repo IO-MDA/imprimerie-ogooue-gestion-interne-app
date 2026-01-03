@@ -20,7 +20,9 @@ import {
   Eye,
   Download,
   MessageSquare,
-  Truck
+  Truck,
+  Heart,
+  ArrowUpDown
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
@@ -63,6 +65,10 @@ export default function PortailClient() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [favoris, setFavoris] = useState([]);
+  const [showFavorisOnly, setShowFavorisOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('none');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -96,14 +102,15 @@ export default function PortailClient() {
 
       if (clientData) {
         // Load all related data
-        const [devisData, facturesData, projetsData, catalogueData, commandesData, tarifsData, demandesData] = await Promise.all([
+        const [devisData, facturesData, projetsData, catalogueData, commandesData, tarifsData, demandesData, favorisData] = await Promise.all([
           base44.entities.Devis.filter({ client_id: clientData.id }),
           base44.entities.Facture.filter({ client_id: clientData.id }),
           base44.entities.Projet.filter({ client_id: clientData.id }),
           base44.entities.ProduitCatalogue.filter({ actif: true, visible_clients: true }),
           base44.entities.Commande.filter({ client_id: clientData.id }),
           base44.entities.TarifsClients.filter({ client_id: clientData.id }),
-          base44.entities.DemandeClient.filter({ client_id: clientData.id })
+          base44.entities.DemandeClient.filter({ client_id: clientData.id }),
+          base44.entities.Favoris.filter({ client_id: clientData.id })
         ]);
 
         setDevis(devisData);
@@ -113,6 +120,7 @@ export default function PortailClient() {
         setCommandes(commandesData);
         setTarifsClients(tarifsData);
         setDemandes(demandesData);
+        setFavoris(favorisData);
       }
     } catch (e) {
       console.error('Error loading data:', e);
@@ -349,14 +357,80 @@ export default function PortailClient() {
     }
   };
 
-  // Filter catalogue
-  const filteredCatalogue = produitsCatalogue.filter(p => {
-    if (!catalogueSearch) return true;
-    const search = catalogueSearch.toLowerCase();
-    return p.nom?.toLowerCase().includes(search) ||
-           p.description_courte?.toLowerCase().includes(search) ||
-           p.categorie?.toLowerCase().includes(search);
+  const toggleFavori = async (produit) => {
+    const existingFavori = favoris.find(f => f.produit_id === produit.id);
+    
+    if (existingFavori) {
+      await base44.entities.Favoris.delete(existingFavori.id);
+      setFavoris(prev => prev.filter(f => f.id !== existingFavori.id));
+      toast.success('Retiré des favoris');
+    } else {
+      const newFavori = await base44.entities.Favoris.create({
+        client_id: client.id,
+        client_nom: client.nom,
+        produit_id: produit.id,
+        produit_nom: produit.nom
+      });
+      setFavoris(prev => [...prev, newFavori]);
+      toast.success('Ajouté aux favoris ❤️');
+    }
+  };
+
+  const isFavori = (produitId) => {
+    return favoris.some(f => f.produit_id === produitId);
+  };
+
+  // Categories
+  const categories = ['Tous', ...new Set(produitsCatalogue.map(p => p.categorie).filter(Boolean))];
+
+  // Filter & Sort catalogue
+  let filteredCatalogue = produitsCatalogue.filter(p => {
+    // Filtre recherche
+    if (catalogueSearch) {
+      const search = catalogueSearch.toLowerCase();
+      const matchSearch = p.nom?.toLowerCase().includes(search) ||
+             p.description_courte?.toLowerCase().includes(search) ||
+             p.categorie?.toLowerCase().includes(search);
+      if (!matchSearch) return false;
+    }
+
+    // Filtre catégorie
+    if (selectedCategory !== 'all' && selectedCategory !== 'Tous' && p.categorie !== selectedCategory) {
+      return false;
+    }
+
+    // Filtre favoris
+    if (showFavorisOnly && !isFavori(p.id)) {
+      return false;
+    }
+
+    return true;
   });
+
+  // Tri
+  if (sortBy === 'prix-asc') {
+    filteredCatalogue = [...filteredCatalogue].sort((a, b) => getPrixClient(a) - getPrixClient(b));
+  } else if (sortBy === 'prix-desc') {
+    filteredCatalogue = [...filteredCatalogue].sort((a, b) => getPrixClient(b) - getPrixClient(a));
+  } else if (sortBy === 'delai-rapide') {
+    filteredCatalogue = [...filteredCatalogue].sort((a, b) => {
+      const getDelaiValue = (delai) => {
+        if (!delai) return 999;
+        const match = delai.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 999;
+      };
+      return getDelaiValue(a.delai_estime) - getDelaiValue(b.delai_estime);
+    });
+  } else if (sortBy === 'delai-long') {
+    filteredCatalogue = [...filteredCatalogue].sort((a, b) => {
+      const getDelaiValue = (delai) => {
+        if (!delai) return 0;
+        const match = delai.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      };
+      return getDelaiValue(b.delai_estime) - getDelaiValue(a.delai_estime);
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 pb-24 md:pb-6">
@@ -555,6 +629,7 @@ export default function PortailClient() {
           <Card className="border-0 shadow-lg">
             <CardContent className="p-4">
               <div className="flex flex-col gap-3">
+                {/* Recherche + Tri */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -568,6 +643,63 @@ export default function PortailClient() {
                       className="pl-10"
                     />
                   </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-32">
+                      <ArrowUpDown className="w-4 h-4 mr-1" />
+                      <SelectValue placeholder="Tri" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Par défaut</SelectItem>
+                      <SelectItem value="prix-asc">Prix ↑</SelectItem>
+                      <SelectItem value="prix-desc">Prix ↓</SelectItem>
+                      <SelectItem value="delai-rapide">Délai ↓</SelectItem>
+                      <SelectItem value="delai-long">Délai ↑</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Catégories Chips */}
+                <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+                  <style>{`
+                    .scrollbar-hide::-webkit-scrollbar { display: none; }
+                    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                  `}</style>
+                  <div className="flex gap-2 min-w-max">
+                    {categories.map(cat => {
+                      const isActive = cat === 'Tous' ? selectedCategory === 'all' : selectedCategory === cat;
+                      const count = cat === 'Tous' 
+                        ? produitsCatalogue.length 
+                        : produitsCatalogue.filter(p => p.categorie === cat).length;
+
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat === 'Tous' ? 'all' : cat)}
+                          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                            isActive 
+                              ? 'bg-blue-600 text-white shadow-md' 
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {cat} <span className="opacity-60">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Favoris + Sélection */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button 
+                    size="sm"
+                    variant={showFavorisOnly ? "default" : "outline"}
+                    onClick={() => setShowFavorisOnly(!showFavorisOnly)}
+                    className={showFavorisOnly ? 'bg-red-500 hover:bg-red-600' : ''}
+                  >
+                    <Heart className={`w-4 h-4 mr-1 ${showFavorisOnly ? 'fill-white' : ''}`} />
+                    Favoris {showFavorisOnly && `(${favoris.length})`}
+                  </Button>
+
                   <Button 
                     size="sm"
                     variant={selectionMode ? "default" : "outline"}
@@ -576,13 +708,13 @@ export default function PortailClient() {
                       setSelectedProducts([]);
                     }}
                   >
-                    {selectionMode ? 'Annuler' : 'Sélectionner'}
+                    {selectionMode ? 'Annuler sélection' : 'Sélectionner'}
                   </Button>
                 </div>
 
                 {selectionMode && selectedProducts.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-blue-100 text-blue-700">
+                  <div className="flex items-center gap-2 flex-wrap p-3 bg-blue-50 rounded-lg">
+                    <Badge className="bg-blue-600 text-white">
                       {selectedProducts.length} sélectionné{selectedProducts.length > 1 ? 's' : ''}
                     </Badge>
                     <Button 
@@ -608,7 +740,7 @@ export default function PortailClient() {
                       variant="outline"
                       onClick={() => setSelectedProducts([])}
                     >
-                      Tout désélectionner
+                      Désélectionner tout
                     </Button>
                   </div>
                 )}
@@ -628,7 +760,7 @@ export default function PortailClient() {
                     ) : (
                       <>
                         <Download className="w-4 h-4 mr-2" />
-                        Mon catalogue PDF
+                        Télécharger le catalogue PDF
                       </>
                     )}
                   </Button>
@@ -675,15 +807,31 @@ export default function PortailClient() {
                     }}
                   >
                     <CardContent className="p-3">
-                      {selectionMode && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      <div className="absolute top-2 right-2 z-10 flex gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavori(produit);
+                          }}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            isFavori(produit.id) 
+                              ? 'bg-red-500 hover:bg-red-600' 
+                              : 'bg-white/90 hover:bg-white border border-slate-200'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${
+                            isFavori(produit.id) ? 'fill-white text-white' : 'text-slate-400'
+                          }`} />
+                        </button>
+
+                        {selectionMode && (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                             isSelected ? 'bg-blue-600' : 'bg-white border-2 border-slate-300'
                           }`}>
                             {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {produit.photos && produit.photos.length > 0 ? (
                         <img
