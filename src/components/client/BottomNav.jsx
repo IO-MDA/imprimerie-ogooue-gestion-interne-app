@@ -1,9 +1,9 @@
 import React from 'react';
-import { Home, ShoppingBag, FileText, Receipt, MessageSquare, Package } from 'lucide-react';
+import { Home, ShoppingBag, FileText, Receipt, Package } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 
-export default function BottomNav({ activeTab, onTabChange, badges = {} }) {
+function BottomNav({ activeTab, onTabChange, badges = {} }) {
   const navItems = [
     { id: 'accueil', label: 'Accueil', icon: Home },
     { id: 'catalogue', label: 'Catalogue', icon: ShoppingBag },
@@ -54,3 +54,5 @@ export default function BottomNav({ activeTab, onTabChange, badges = {} }) {
     </nav>
   );
 }
+
+export default BottomNav;
