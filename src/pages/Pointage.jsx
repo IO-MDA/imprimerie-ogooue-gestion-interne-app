@@ -61,7 +61,6 @@ export default function Pointage() {
   }, [pointages]);
 
   const loadData = async () => {
-    setIsLoading(true);
     try {
       const userData = await base44.auth.me();
       setUser(userData);
@@ -90,7 +89,11 @@ export default function Pointage() {
       setPointages(pointagesData);
       setUsers(usersData);
       
-      console.log('Pointages chargés:', pointagesData.length, 'pour user:', userData.id);
+      console.log('✅ Pointages chargés:', pointagesData.length, 'User ID:', userData.id);
+      const today = moment().format('YYYY-MM-DD');
+      const todayPointages = pointagesData.filter(p => p.employe_id === userData.id && p.date === today);
+      console.log('📅 Pointages du jour:', todayPointages);
+      console.log('🔄 Pointage en cours:', todayPointages.find(p => p.statut === 'en_cours'));
     } catch (e) {
       console.error('Error loading data:', e);
       toast.error('Erreur de chargement');
@@ -524,6 +527,14 @@ export default function Pointage() {
       {/* Bouton de pointage pour employé */}
       {isOperateur && (
         <div className="space-y-4">
+          {/* Debug Info (à retirer plus tard) */}
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-slate-700">
+            <p>🔍 Debug: User ID = {user?.id}</p>
+            <p>📅 Pointages totaux: {pointages.length}</p>
+            <p>📋 Pointages du jour: {pointages.filter(p => p.employe_id === user?.id && p.date === today).length}</p>
+            <p>🔄 Pointage en cours: {pointageEnCours ? `OUI (${pointageEnCours.heure_entree})` : 'NON'}</p>
+          </div>
+
           <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -537,19 +548,19 @@ export default function Pointage() {
                     </p>
                     <p className="text-blue-100">
                       {pointageEnCours 
-                        ? `Cliquez pour enregistrer votre départ`
+                        ? `Cliquez sur le bouton ROUGE pour sortir`
                         : 'Cliquez pour enregistrer votre arrivée'}
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-col gap-3 w-full sm:w-auto">
                   <Button 
                     onClick={handleEntree}
                     size="lg"
                     disabled={!!pointageEnCours}
-                    className={`flex-1 sm:flex-none font-semibold shadow-lg ${
+                    className={`w-full font-semibold shadow-lg ${
                       pointageEnCours 
-                        ? 'bg-white/30 text-white/50 cursor-not-allowed' 
+                        ? 'bg-white/30 text-white/50 cursor-not-allowed opacity-50' 
                         : 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-xl'
                     }`}
                   >
@@ -557,13 +568,20 @@ export default function Pointage() {
                     Pointer l'entrée
                   </Button>
                   <Button 
-                    onClick={() => pointageEnCours && handleSortie(pointageEnCours.id)}
+                    onClick={() => {
+                      console.log('🔴 CLIC SORTIE - Pointage en cours:', pointageEnCours);
+                      if (pointageEnCours) {
+                        handleSortie(pointageEnCours.id);
+                      } else {
+                        toast.error('Aucun pointage en cours détecté');
+                      }
+                    }}
                     size="lg"
                     disabled={!pointageEnCours}
-                    className={`flex-1 sm:flex-none font-semibold shadow-lg ${
+                    className={`w-full font-semibold shadow-lg transition-all ${
                       !pointageEnCours 
-                        ? 'bg-white/30 text-white/50 cursor-not-allowed' 
-                        : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-xl'
+                        ? 'bg-white/30 text-white/50 cursor-not-allowed opacity-50' 
+                        : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-2xl active:scale-95'
                     }`}
                   >
                     <XCircle className="w-5 h-5 mr-2" />
@@ -594,9 +612,9 @@ export default function Pointage() {
                       {moment(pointageEnCours.heure_entree, 'HH:mm').fromNow()}
                     </p>
                   </div>
-                  <div className="p-2 bg-rose-500/20 rounded-lg">
-                    <p className="text-sm text-white font-medium text-center">
-                      👆 Cliquez sur "Pointer la sortie" (bouton rouge) pour terminer votre journée
+                  <div className="p-3 bg-rose-500/30 rounded-lg border border-white/20">
+                    <p className="text-sm text-white font-bold text-center animate-pulse">
+                      👆 Cliquez sur le bouton ROUGE ci-dessus pour terminer votre journée
                     </p>
                   </div>
                 </div>
@@ -611,7 +629,7 @@ export default function Pointage() {
                 {pointages.filter(p => p.employe_id === user?.id && p.date === today && p.statut === 'termine').map(p => (
                   <div key={p.id} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Pointage du jour terminé</p>
+                      <p className="text-sm font-medium text-slate-900">Pointage du jour terminé ✅</p>
                       <p className="text-xs text-slate-600">
                         {p.heure_entree} → {p.heure_sortie} 
                         <span className="ml-2 font-medium text-emerald-600">
