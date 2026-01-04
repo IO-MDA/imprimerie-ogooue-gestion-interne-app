@@ -352,17 +352,4 @@ export default function FournisseursView({ fournisseurs, etapes, materiaux, onUp
       </Dialog>
     </div>
   );
-
-  function getFournisseurStats(fournisseurId) {
-    const etapesFournisseur = etapes.filter(e => e.fournisseur_id === fournisseurId);
-    const materiauxFournisseur = materiaux.filter(m => m.fournisseur_id === fournisseurId);
-    
-    const totalDepense = etapesFournisseur.reduce((sum, e) => sum + (e.montant_depense || 0), 0) +
-                         materiauxFournisseur.reduce((sum, m) => sum + (m.total || 0), 0);
-    const totalPaye = etapesFournisseur.reduce((sum, e) => sum + (e.montant_paye || 0), 0) +
-                      materiauxFournisseur.reduce((sum, m) => sum + (m.montant_paye || 0), 0);
-    const nbCommandes = etapesFournisseur.length + materiauxFournisseur.length;
-    
-    return { totalDepense, totalPaye, nbCommandes };
-  }
 }
