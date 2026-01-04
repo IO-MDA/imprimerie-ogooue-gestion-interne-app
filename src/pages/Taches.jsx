@@ -72,17 +72,23 @@ export default function Taches() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [tachesData, usersData, projetsData, userData] = await Promise.all([
-      base44.entities.Tache.list('-date_echeance'),
-      base44.entities.User.list(),
-      base44.entities.Projet.list(),
-      base44.auth.me()
-    ]);
-    setTaches(tachesData);
-    setUsers(usersData);
-    setProjets(projetsData);
-    setUser(userData);
-    setIsLoading(false);
+    try {
+      const [tachesData, usersData, projetsData, userData] = await Promise.all([
+        base44.entities.Tache.list('-date_echeance'),
+        base44.entities.User.list(),
+        base44.entities.Projet.list(),
+        base44.auth.me()
+      ]);
+      setTaches(tachesData);
+      setUsers(usersData);
+      setProjets(projetsData);
+      setUser(userData);
+    } catch (e) {
+      console.error('Error loading data:', e);
+      toast.error('Erreur lors du chargement des données');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isAdmin = user?.role === 'admin';
