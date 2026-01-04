@@ -93,6 +93,7 @@ export default function Layout({ children, currentPageName }) {
   const allNavigation = [
             { name: 'Tableau de bord', href: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
             { name: 'Tableau de bord RH', href: 'TableauBordRH', icon: Users, roles: ['admin', 'manager'] },
+            { name: 'Employés', href: 'Employes', icon: Users, roles: ['admin', 'manager'] },
             { name: 'Performance employés', href: 'PerformanceEmployes', icon: BarChart3, roles: ['admin', 'manager'] },
             { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'] },
             { name: 'Chat interne', href: 'Chat', icon: MessageSquare, roles: ['admin', 'manager', 'user'] },

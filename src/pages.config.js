@@ -31,6 +31,7 @@ import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
 import Chat from './pages/Chat';
+import Employes from './pages/Employes';
 import __Layout from './Layout.jsx';
 
 
@@ -68,6 +69,7 @@ export const PAGES = {
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
     "Chat": Chat,
+    "Employes": Employes,
 }
 
 export const pagesConfig = {
