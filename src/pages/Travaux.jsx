@@ -17,6 +17,7 @@ import TravauxForm from '@/components/travaux/TravauxForm';
 import TravauxList from '@/components/travaux/TravauxList';
 import TravauxBilan from '@/components/travaux/TravauxBilan';
 import TravauxOptimisationIA from '@/components/travaux/TravauxOptimisationIA';
+import TableauBordFinancierIA from '@/components/travaux/TableauBordFinancierIA';
 import ProjetTravauxForm from '@/components/travaux/ProjetTravauxForm';
 import CategorieForm from '@/components/travaux/CategorieForm';
 import EtapeForm from '@/components/travaux/EtapeForm';
@@ -431,35 +432,48 @@ export default function Travaux() {
 
                       {/* Views */}
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant={activeView === 'liste' ? 'default' : 'outline'}
-                          onClick={() => setActiveView('liste')}
-                          size="sm"
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          Liste
-                        </Button>
-                        <Button
-                          variant={activeView === 'bilan' ? 'default' : 'outline'}
-                          onClick={() => setActiveView('bilan')}
-                          size="sm"
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Bilan
-                        </Button>
+                       <Button
+                         variant={activeView === 'liste' ? 'default' : 'outline'}
+                         onClick={() => setActiveView('liste')}
+                         size="sm"
+                       >
+                         <FileText className="w-4 h-4 mr-2" />
+                         Liste
+                       </Button>
+                       <Button
+                         variant={activeView === 'bilan' ? 'default' : 'outline'}
+                         onClick={() => setActiveView('bilan')}
+                         size="sm"
+                       >
+                         <BarChart3 className="w-4 h-4 mr-2" />
+                         Bilan
+                       </Button>
+                       <Button
+                         variant={activeView === 'dashboard-ia' ? 'default' : 'outline'}
+                         onClick={() => setActiveView('dashboard-ia')}
+                         size="sm"
+                         className="border-violet-300 text-violet-600"
+                       >
+                         <Sparkles className="w-4 h-4 mr-2" />
+                         Dashboard IA
+                       </Button>
                       </div>
 
                       {activeView === 'liste' && (
-                        <TravauxList 
-                          travaux={travauxFiltered}
-                          onEdit={handleEditTravail}
-                          onDelete={handleDeleteTravail}
-                          isAdmin={isAdmin}
-                        />
+                       <TravauxList 
+                         travaux={travauxFiltered}
+                         onEdit={handleEditTravail}
+                         onDelete={handleDeleteTravail}
+                         isAdmin={isAdmin}
+                       />
                       )}
 
                       {activeView === 'bilan' && (
-                        <TravauxBilan travaux={travauxFiltered} projet={activeTab} />
+                       <TravauxBilan travaux={travauxFiltered} projet={activeTab} />
+                      )}
+
+                      {activeView === 'dashboard-ia' && (
+                       <TableauBordFinancierIA travaux={travauxFiltered} projet={activeTab} />
                       )}
                     </TabsContent>
                   </Tabs>
