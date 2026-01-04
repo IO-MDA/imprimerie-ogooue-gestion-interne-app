@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, TrendingDown, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Sparkles, Loader2, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function TravauxOptimisationIA({ travaux, projet }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
 
   const analyzeWithAI = async () => {
@@ -284,13 +285,58 @@ Sois précis, pragmatique et adapté au contexte gabonais.`;
             </CardContent>
           </Card>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-3">
             <Button onClick={() => setAnalysis(null)} variant="outline">
               Nouvelle analyse
+            </Button>
+            <Button 
+              onClick={handleGeneratePDF}
+              disabled={pdfLoading}
+              className="bg-blue-600"
+            >
+              {pdfLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Génération PDF...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Télécharger le rapport PDF
+                </>
+              )}
             </Button>
           </div>
         </div>
       )}
     </div>
   );
+
+  async function handleGeneratePDF() {
+    setPdfLoading(true);
+    try {
+      const response = await base44.functions.invoke('genererRapportTravauxIA', {
+        projet,
+        travaux,
+        analysis
+      });
+
+      if (response.data.success && response.data.pdf_url) {
+        const link = document.createElement('a');
+        link.href = response.data.pdf_url;
+        link.download = `Rapport_Travaux_${projet}_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Rapport PDF téléchargé');
+      } else {
+        throw new Error('Erreur génération PDF');
+      }
+    } catch (e) {
+      toast.error('Impossible de générer le PDF');
+      console.error(e);
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 }
