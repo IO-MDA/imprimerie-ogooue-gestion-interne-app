@@ -71,18 +71,21 @@ export default function Pointage() {
       // Charger les pointages selon le rôle
       let pointagesData;
       if (userData.role === 'admin' || userData.role === 'manager') {
-        pointagesData = await base44.entities.Pointage.list('-date');
+        pointagesData = await base44.entities.Pointage.list('-date', 500);
       } else {
         // Opérateur : voir uniquement ses propres pointages
-        pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id }, '-date');
+        pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id }, '-date', 100);
       }
       
       const usersData = await base44.entities.User.list();
       
       setPointages(pointagesData);
       setUsers(usersData);
+      
+      console.log('Pointages chargés:', pointagesData.length, 'pour user:', userData.id);
     } catch (e) {
       console.error('Error loading data:', e);
+      toast.error('Erreur de chargement');
     } finally {
       setIsLoading(false);
     }
@@ -147,8 +150,12 @@ export default function Pointage() {
       });
       
       setLastPointageInfo({ type: 'entree', heure: heureActuelle });
-      toast.success(`✅ Entrée enregistrée à ${heureActuelle}`);
-      await loadData();
+      toast.success(`✅ Entrée enregistrée à ${heureActuelle}`, { duration: 5000 });
+      
+      // Force reload
+      setTimeout(async () => {
+        await loadData();
+      }, 500);
     } catch (e) {
       console.error('Erreur pointage entrée:', e);
       toast.error('Erreur lors du pointage d\'entrée');
@@ -173,8 +180,12 @@ export default function Pointage() {
       const dureeMin = dureeMinutes % 60;
       
       setLastPointageInfo({ type: 'sortie', heure: heureSortieStr, duree: `${dureeHeures}h${dureeMin}min` });
-      toast.success(`✅ Sortie enregistrée à ${heureSortieStr} (Durée: ${dureeHeures}h${dureeMin}min)`);
-      loadData();
+      toast.success(`✅ Sortie enregistrée à ${heureSortieStr} (Durée: ${dureeHeures}h${dureeMin}min)`, { duration: 5000 });
+      
+      // Force reload
+      setTimeout(async () => {
+        await loadData();
+      }, 500);
     } catch (e) {
       console.error('Erreur sortie:', e);
       toast.error('Erreur lors du pointage de sortie');
@@ -522,23 +533,23 @@ export default function Pointage() {
                     onClick={handleEntree}
                     size="lg"
                     disabled={!!pointageEnCours}
-                    className={`flex-1 sm:flex-none ${
+                    className={`flex-1 sm:flex-none font-semibold shadow-lg ${
                       pointageEnCours 
-                        ? 'bg-white/40 text-white cursor-not-allowed' 
-                        : 'bg-white text-blue-600 hover:bg-blue-50'
+                        ? 'bg-white/30 text-white/50 cursor-not-allowed' 
+                        : 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-xl'
                     }`}
                   >
                     <CheckCircle className="w-5 h-5 mr-2" />
                     Pointer l'entrée
                   </Button>
                   <Button 
-                    onClick={() => handleSortie(pointageEnCours.id)}
+                    onClick={() => pointageEnCours && handleSortie(pointageEnCours.id)}
                     size="lg"
                     disabled={!pointageEnCours}
-                    className={`flex-1 sm:flex-none ${
+                    className={`flex-1 sm:flex-none font-semibold shadow-lg ${
                       !pointageEnCours 
-                        ? 'bg-white/40 text-white cursor-not-allowed' 
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        ? 'bg-white/30 text-white/50 cursor-not-allowed' 
+                        : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-xl'
                     }`}
                   >
                     <XCircle className="w-5 h-5 mr-2" />
@@ -560,13 +571,18 @@ export default function Pointage() {
               )}
 
               {pointageEnCours && (
-                <div className="mt-4 pt-4 border-t border-white/20">
+                <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-blue-100">
                       📍 Entrée enregistrée à <span className="font-bold text-white">{pointageEnCours.heure_entree}</span>
                     </p>
                     <p className="text-xs text-blue-200">
                       {moment(pointageEnCours.heure_entree, 'HH:mm').fromNow()}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-rose-500/20 rounded-lg">
+                    <p className="text-sm text-white font-medium text-center">
+                      👆 Cliquez sur "Pointer la sortie" (bouton rouge) pour terminer votre journée
                     </p>
                   </div>
                 </div>
@@ -815,8 +831,19 @@ export default function Pointage() {
             </div>
           )}
 
-          <div className="grid gap-3">
-            {filteredPointages.map(pointage => {
+          <div className="space-y-3">
+            {filteredPointages.length === 0 ? (
+              <Card className="border-0 shadow-lg">
+                <CardContent className="py-16 text-center">
+                  <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500">Aucun pointage pour cette période</p>
+                  {isOperateur && !pointageEnCours && (
+                    <p className="text-sm text-slate-400 mt-2">Cliquez sur "Pointer l'entrée" pour commencer</p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              filteredPointages.map(pointage => {
               const isLate = pointage.heure_entree > '08:00';
               const isOvertime = pointage.duree_minutes > 8 * 60;
 
@@ -898,14 +925,7 @@ export default function Pointage() {
                   </CardContent>
                 </Card>
               );
-            })}
-            {filteredPointages.length === 0 && (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="py-16 text-center">
-                  <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">Aucun pointage pour cette période</p>
-                </CardContent>
-              </Card>
+            })
             )}
           </div>
         </TabsContent>
