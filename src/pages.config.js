@@ -3,6 +3,7 @@ import Avances from './pages/Avances';
 import Bilans from './pages/Bilans';
 import CalendrierTaches from './pages/CalendrierTaches';
 import Catalogue from './pages/Catalogue';
+import Chat from './pages/Chat';
 import Clients from './pages/Clients';
 import Commandes from './pages/Commandes';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +11,7 @@ import DemandeModification from './pages/DemandeModification';
 import DemandesModification from './pages/DemandesModification';
 import DemandesRH from './pages/DemandesRH';
 import DevisFactures from './pages/DevisFactures';
+import Employes from './pages/Employes';
 import Evenements from './pages/Evenements';
 import Finances from './pages/Finances';
 import InscriptionClient from './pages/InscriptionClient';
@@ -30,8 +32,6 @@ import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
-import Chat from './pages/Chat';
-import Employes from './pages/Employes';
 import __Layout from './Layout.jsx';
 
 
@@ -41,6 +41,7 @@ export const PAGES = {
     "Bilans": Bilans,
     "CalendrierTaches": CalendrierTaches,
     "Catalogue": Catalogue,
+    "Chat": Chat,
     "Clients": Clients,
     "Commandes": Commandes,
     "Dashboard": Dashboard,
@@ -48,6 +49,7 @@ export const PAGES = {
     "DemandesModification": DemandesModification,
     "DemandesRH": DemandesRH,
     "DevisFactures": DevisFactures,
+    "Employes": Employes,
     "Evenements": Evenements,
     "Finances": Finances,
     "InscriptionClient": InscriptionClient,
@@ -68,8 +70,6 @@ export const PAGES = {
     "Taches": Taches,
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
-    "Chat": Chat,
-    "Employes": Employes,
 }
 
 export const pagesConfig = {
