@@ -20,39 +20,52 @@ import StatCard from '@/components/dashboard/StatCard';
 import ServiceChart from '@/components/dashboard/ServiceChart';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import RoleProtection from '@/components/auth/RoleProtection';
+import { useOptimizedQuery, useStaticQuery } from '@/components/hooks/useOptimizedQuery';
 import moment from 'moment';
 
 export default function Dashboard() {
-  const [rapports, setRapports] = useState([]);
-  const [produits, setProuits] = useState([]);
-  const [devis, setDevis] = useState([]);
-  const [factures, setFactures] = useState([]);
-  const [objectifs, setObjectifs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    loadData();
+    loadUser();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    const [rapportsData, produitsData, devisData, facturesData, objectifsData, userData] = await Promise.all([
-      base44.entities.RapportJournalier.list('-date', 300),
-      base44.entities.Produit.list(),
-      base44.entities.Devis.list('-created_date', 50),
-      base44.entities.Facture.list('-created_date', 50),
-      base44.entities.Objectif.list(),
-      base44.auth.me()
-    ]);
-    setRapports(rapportsData);
-    setProuits(produitsData);
-    setDevis(devisData);
-    setFactures(facturesData);
-    setObjectifs(objectifsData);
+  const loadUser = async () => {
+    const userData = await base44.auth.me();
     setUser(userData);
-    setIsLoading(false);
   };
+
+  // Optimized queries with caching
+  const { data: rapports = [], isLoading: loadingRapports } = useOptimizedQuery(
+    'dashboard-rapports',
+    () => base44.entities.RapportJournalier.list('-date', 300),
+    { staleTime: 2 * 60 * 1000 } // 2 minutes
+  );
+
+  const { data: produits = [] } = useStaticQuery(
+    'dashboard-produits',
+    () => base44.entities.Produit.list()
+  );
+
+  const { data: devis = [] } = useOptimizedQuery(
+    'dashboard-devis',
+    () => base44.entities.Devis.list('-created_date', 50),
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  const { data: factures = [] } = useOptimizedQuery(
+    'dashboard-factures',
+    () => base44.entities.Facture.list('-created_date', 50),
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  const { data: objectifs = [] } = useOptimizedQuery(
+    'dashboard-objectifs',
+    () => base44.entities.Objectif.list(),
+    { staleTime: 10 * 60 * 1000 }
+  );
+
+  const isLoading = loadingRapports;
 
   // Calculate stats
   const today = moment().format('YYYY-MM-DD');

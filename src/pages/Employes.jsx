@@ -22,16 +22,14 @@ import {
   Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOptimizedQuery, useStaticQuery } from '@/components/hooks/useOptimizedQuery';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 
 export default function Employes() {
   const [user, setUser] = useState(null);
-  const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [pointages, setPointages] = useState([]);
-  const [demandes, setDemandes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -44,58 +42,70 @@ export default function Employes() {
     adresse: ''
   });
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
-    loadData();
+    loadUser();
   }, []);
 
-  useEffect(() => {
-    if (selectedEmployee) {
-      loadEmployeeDetails(selectedEmployee.id);
-    }
-  }, [selectedEmployee]);
+  const loadUser = async () => {
+    const userData = await base44.auth.me();
+    setUser(userData);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const userData = await base44.auth.me();
-      setUser(userData);
-
-      if (userData.role !== 'admin' && userData.role !== 'manager') {
-        toast.error('Accès réservé aux administrateurs et managers');
-        window.location.href = '/Dashboard';
-        return;
-      }
-
-      const [usersData, clientsData] = await Promise.all([
-        base44.entities.User.list(),
-        base44.entities.Client.list()
-      ]);
-
-      // Filter out clients (users who have client profiles)
-      const clientUserIds = clientsData.map(c => c.user_id);
-      const employeesOnly = usersData.filter(u => !clientUserIds.includes(u.id));
-
-      setEmployees(employeesOnly);
-    } catch (e) {
-      console.error('Error loading data:', e);
-      toast.error('Erreur lors du chargement');
-    } finally {
-      setIsLoading(false);
+    if (userData.role !== 'admin' && userData.role !== 'manager') {
+      toast.error('Accès réservé aux administrateurs et managers');
+      window.location.href = '/Dashboard';
     }
   };
 
-  const loadEmployeeDetails = async (employeeId) => {
-    try {
-      const [pointagesData, demandesData] = await Promise.all([
-        base44.entities.Pointage.filter({ employe_id: employeeId }, '-date'),
-        base44.entities.DemandeRH.filter({ demandeur_id: employeeId }, '-created_date')
-      ]);
+  // Optimized queries
+  const { data: usersData = [] } = useStaticQuery('all-users', () => base44.entities.User.list());
+  const { data: clientsData = [] } = useStaticQuery('all-clients', () => base44.entities.Client.list());
 
-      setPointages(pointagesData.slice(0, 10)); // Last 10
-      setDemandes(demandesData.slice(0, 10)); // Last 10
-    } catch (e) {
-      console.error('Error loading employee details:', e);
+  const employees = usersData.filter(u => !clientsData.map(c => c.user_id).includes(u.id));
+
+  const { data: pointages = [] } = useOptimizedQuery(
+    ['employee-pointages', selectedEmployee?.id],
+    () => selectedEmployee ? base44.entities.Pointage.filter({ employe_id: selectedEmployee.id }, '-date') : Promise.resolve([]),
+    { enabled: !!selectedEmployee, staleTime: 60 * 1000 }
+  );
+
+  const { data: demandes = [] } = useOptimizedQuery(
+    ['employee-demandes', selectedEmployee?.id],
+    () => selectedEmployee ? base44.entities.DemandeRH.filter({ demandeur_id: selectedEmployee.id }, '-created_date') : Promise.resolve([]),
+    { enabled: !!selectedEmployee, staleTime: 60 * 1000 }
+  );
+
+  // Mutations
+  const updateEmployeeMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['all-users']);
+      toast.success('Profil mis à jour');
+      setShowEditDialog(false);
+    },
+    onError: () => toast.error('Erreur lors de la mise à jour')
+  });
+
+  const handleEditEmployee = async () => {
+    if (!editForm.full_name || !editForm.email) {
+      toast.error('Le nom et l\'email sont obligatoires');
+      return;
     }
+
+    updateEmployeeMutation.mutate({
+      id: selectedEmployee.id,
+      data: {
+        full_name: editForm.full_name,
+        email: editForm.email,
+        telephone: editForm.telephone,
+        departement: editForm.departement,
+        poste: editForm.poste,
+        date_embauche: editForm.date_embauche,
+        salaire: editForm.salaire ? parseFloat(editForm.salaire) : null,
+        adresse: editForm.adresse
+      }
+    });
   };
 
   const handleEditEmployee = async () => {
