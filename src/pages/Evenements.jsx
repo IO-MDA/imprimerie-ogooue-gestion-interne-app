@@ -130,6 +130,18 @@ export default function Evenements() {
     return colors[type] || colors.autre;
   };
 
+  const getEventEmoji = (type) => {
+    const emojis = {
+      fete_nationale: '🇬🇦',
+      fete_religieuse: '🙏',
+      rentree_scolaire: '🎒',
+      commercial: '💰',
+      culturel: '🎨',
+      autre: '📅'
+    };
+    return emojis[type] || emojis.autre;
+  };
+
   // Generate calendar days
   const generateCalendarDays = () => {
     const startOfMonth = currentMonth.clone().startOf('month');
@@ -200,9 +212,9 @@ export default function Evenements() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Mini Calendar */}
-        <Card className="border-0 shadow-lg lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Large Calendar */}
+        <Card className="border-0 shadow-lg lg:col-span-3">
           <CardHeader>
             <div className="flex items-center justify-between">
               <Button
@@ -225,14 +237,14 @@ export default function Evenements() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((day, i) => (
-                <div key={i} className="text-center text-xs font-medium text-slate-500 py-1">
+            <div className="grid grid-cols-7 gap-2 mb-3">
+              {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((day, i) => (
+                <div key={i} className="text-center text-sm font-semibold text-slate-700 py-2">
                   {day}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2">
               {generateCalendarDays().map((day, idx) => {
                 const dayEvents = getEventsForDay(day);
                 const isToday = day.isSame(moment(), 'day');
@@ -249,21 +261,46 @@ export default function Evenements() {
                         setShowCampagne(true);
                       }
                     }}
-                    className={`aspect-square p-1 text-xs rounded-lg transition-all relative ${
-                      isSelected ? 'bg-blue-500 text-white' :
-                      isToday ? 'bg-blue-100 text-blue-700 font-bold' :
-                      !isCurrentMonth ? 'text-slate-300' :
-                      dayEvents.length > 0 ? 'bg-emerald-100 text-emerald-700 font-medium hover:bg-emerald-200' :
-                      'text-slate-700 hover:bg-slate-100'
+                    className={`min-h-[80px] p-2 text-sm rounded-xl transition-all relative border-2 ${
+                      isSelected ? 'bg-blue-500 text-white border-blue-600' :
+                      isToday ? 'bg-blue-50 border-blue-300 font-bold' :
+                      !isCurrentMonth ? 'text-slate-300 border-slate-100 bg-slate-50' :
+                      'text-slate-700 hover:bg-slate-50 border-slate-200'
                     }`}
                   >
-                    {day.date()}
-                    {dayEvents.length > 0 && (
-                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-600 rounded-full"></div>
-                    )}
+                    <div className="font-semibold mb-1">{day.date()}</div>
+                    <div className="space-y-0.5">
+                      {dayEvents.slice(0, 2).map(evt => (
+                        <div 
+                          key={evt.id}
+                          className={`text-xs px-1 py-0.5 rounded ${getEventColor(evt.type)} text-white truncate`}
+                          title={evt.nom}
+                        >
+                          {getEventEmoji(evt.type)} {evt.nom}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <div className="text-xs text-slate-500">+{dayEvents.length - 2}</div>
+                      )}
+                    </div>
                   </button>
                 );
               })}
+            </div>
+
+            {/* Legend */}
+            <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
+              {Object.entries({
+                fete_nationale: 'Fête nationale',
+                fete_religieuse: 'Fête religieuse',
+                rentree_scolaire: 'Rentrée scolaire',
+                commercial: 'Commercial',
+                culturel: 'Culturel'
+              }).map(([type, label]) => (
+                <Badge key={type} className={`${getEventColor(type)} text-white text-xs`}>
+                  {getEventEmoji(type)} {label}
+                </Badge>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -301,8 +338,8 @@ export default function Evenements() {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-xl ${getEventColor(event.type)} flex items-center justify-center flex-shrink-0`}>
-                          <PartyPopper className="w-6 h-6 text-white" />
+                        <div className={`w-12 h-12 rounded-xl ${getEventColor(event.type)} flex items-center justify-center flex-shrink-0 text-2xl`}>
+                          {getEventEmoji(event.type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">

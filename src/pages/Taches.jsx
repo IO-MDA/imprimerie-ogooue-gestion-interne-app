@@ -21,10 +21,16 @@ import {
   Eye,
   Edit,
   Trash2,
-  Filter
+  Filter,
+  Columns,
+  List,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import moment from 'moment';
+import KanbanBoard from '@/components/taches/KanbanBoard';
+import SousTachesManager from '@/components/taches/SousTachesManager';
+import CommentairesSection from '@/components/taches/CommentairesSection';
 
 export default function Taches() {
   const [taches, setTaches] = useState([]);
@@ -39,6 +45,9 @@ export default function Taches() {
   const [selectedTache, setSelectedTache] = useState(null);
   const [filterTab, setFilterTab] = useState('toutes');
   const [filterStatut, setFilterStatut] = useState('all');
+  const [viewMode, setViewMode] = useState('list');
+  const [showDelegateDialog, setShowDelegateDialog] = useState(false);
+  const [delegateEmail, setDelegateEmail] = useState('');
   const [validationData, setValidationData] = useState({
     commentaire: '',
     fichier: null
@@ -247,6 +256,112 @@ Imprimerie Ogooué`
     }
   };
 
+  const handleStatusChange = async (tacheId, newStatut) => {
+    const tache = taches.find(t => t.id === tacheId);
+    if (!tache) return;
+
+    await base44.entities.Tache.update(tacheId, { 
+      statut: newStatut,
+      progression: newStatut === 'terminee' || newStatut === 'validee' ? 100 : tache.progression
+    });
+
+    // Notification
+    try {
+      if (tache.assigne_a !== user.email) {
+        await base44.integrations.Core.SendEmail({
+          from_name: 'Imprimerie Ogooué',
+          to: tache.assigne_a,
+          subject: `Mise à jour: ${tache.titre}`,
+          body: `Bonjour ${tache.assigne_a_nom},
+
+Le statut de votre tâche "${tache.titre}" a été mis à jour: ${newStatut.replace('_', ' ')}.
+
+Mis à jour par: ${user.full_name || user.email}
+
+Cordialement,
+Imprimerie Ogooué`
+        });
+      }
+    } catch (e) {
+      console.log('Email notification error:', e);
+    }
+
+    toast.success('Statut mis à jour');
+    loadData();
+  };
+
+  const handleUpdateTache = async (updates) => {
+    if (!selectedTache) return;
+    
+    await base44.entities.Tache.update(selectedTache.id, updates);
+    
+    // Notification pour commentaires
+    if (updates.commentaires && taches.find(t => t.id === selectedTache.id)?.assigne_a !== user.email) {
+      try {
+        await base44.integrations.Core.SendEmail({
+          from_name: 'Imprimerie Ogooué',
+          to: selectedTache.assigne_a,
+          subject: `Nouveau commentaire: ${selectedTache.titre}`,
+          body: `Bonjour ${selectedTache.assigne_a_nom},
+
+${user.full_name || user.email} a ajouté un commentaire sur la tâche "${selectedTache.titre}".
+
+Consultez la plateforme pour voir les détails.
+
+Cordialement,
+Imprimerie Ogooué`
+        });
+      } catch (e) {
+        console.log('Email error:', e);
+      }
+    }
+    
+    loadData();
+    setSelectedTache({ ...selectedTache, ...updates });
+  };
+
+  const handleDelegateTask = async () => {
+    if (!delegateEmail || !selectedTache) {
+      toast.error('Veuillez sélectionner un utilisateur');
+      return;
+    }
+
+    const selectedUser = users.find(u => u.email === delegateEmail);
+    
+    await base44.entities.Tache.update(selectedTache.id, {
+      assigne_a: delegateEmail,
+      assigne_a_nom: selectedUser?.full_name || delegateEmail
+    });
+
+    // Notification
+    try {
+      await base44.integrations.Core.SendEmail({
+        from_name: 'Imprimerie Ogooué',
+        to: delegateEmail,
+        subject: `Nouvelle tâche déléguée: ${selectedTache.titre}`,
+        body: `Bonjour ${selectedUser?.full_name || delegateEmail},
+
+${user.full_name || user.email} vous a délégué la tâche "${selectedTache.titre}".
+
+Description: ${selectedTache.description || 'N/A'}
+Priorité: ${selectedTache.priorite}
+Date d'échéance: ${moment(selectedTache.date_echeance).format('DD/MM/YYYY')}
+
+Consultez la plateforme pour plus de détails.
+
+Cordialement,
+Imprimerie Ogooué`
+      });
+    } catch (e) {
+      console.log('Email error:', e);
+    }
+
+    toast.success('Tâche déléguée avec succès');
+    setShowDelegateDialog(false);
+    setDelegateEmail('');
+    loadData();
+  };
+
   const filteredTaches = taches.filter(t => {
     // Filter by tab
     if (filterTab === 'mes_taches' && t.assigne_a !== user?.email) return false;
@@ -280,13 +395,31 @@ Imprimerie Ogooué`
           <h1 className="text-2xl font-bold text-slate-900">Gestion des tâches</h1>
           <p className="text-slate-500">Planifiez et suivez les tâches de l'équipe</p>
         </div>
-        <Button 
-          onClick={() => { setEditingTache(null); setShowForm(true); }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle tâche
-        </Button>
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
+            >
+              <Columns className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button 
+            onClick={() => { setEditingTache(null); setShowForm(true); }}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle tâche
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -372,8 +505,17 @@ Imprimerie Ogooué`
         </CardContent>
       </Card>
 
-      {/* Tasks List */}
-      <div className="grid gap-4">
+      {/* Kanban or List View */}
+      {viewMode === 'kanban' ? (
+        <KanbanBoard 
+          taches={filteredTaches}
+          onStatusChange={handleStatusChange}
+          onTaskClick={(tache) => { setSelectedTache(tache); setShowDetails(true); }}
+          getPriorityIcon={getPriorityIcon}
+          getUrgenceColor={getUrgenceColor}
+        />
+      ) : (
+        <div className="grid gap-4">
         {filteredTaches.length === 0 ? (
           <Card className="border-0 shadow-lg shadow-slate-200/50">
             <CardContent className="py-16 text-center">
@@ -475,7 +617,8 @@ Imprimerie Ogooué`
             );
           })
         )}
-      </div>
+        </div>
+      )}
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -745,8 +888,68 @@ Imprimerie Ogooué`
                   </a>
                 </div>
               )}
+
+              {/* Delegate button for admins */}
+              {isAdmin && (
+                <Button
+                  onClick={() => setShowDelegateDialog(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Déléguer à quelqu'un d'autre
+                </Button>
+              )}
+
+              {/* Sous-tâches */}
+              <SousTachesManager 
+                tache={selectedTache}
+                users={users}
+                onUpdate={handleUpdateTache}
+              />
+
+              {/* Commentaires */}
+              <CommentairesSection
+                tache={selectedTache}
+                user={user}
+                onUpdate={handleUpdateTache}
+              />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delegate Dialog */}
+      <Dialog open={showDelegateDialog} onOpenChange={setShowDelegateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Déléguer la tâche</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Assigner à</Label>
+              <Select value={delegateEmail} onValueChange={setDelegateEmail}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un utilisateur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.email}>
+                      {u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowDelegateDialog(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleDelegateTask} className="bg-blue-600">
+                Déléguer
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
