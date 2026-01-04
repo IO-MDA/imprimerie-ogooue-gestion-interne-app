@@ -23,7 +23,8 @@ import {
   Target,
   BarChart3,
   PieChart,
-  HardHat
+  HardHat,
+  Search
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import GlobalSearch from '@/components/layout/GlobalSearch';
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
@@ -43,6 +45,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -265,6 +268,15 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex-1" />
 
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowGlobalSearch(true)}
+                className="text-slate-600 hover:text-slate-900"
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+
               <Link to={createPageUrl('Messagerie')}>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5 text-slate-600" />
@@ -283,7 +295,10 @@ export default function Layout({ children, currentPageName }) {
         <main className="p-4 lg:p-8">
           {children}
         </main>
-      </div>
-    </div>
-  );
-}
+        </div>
+
+        {/* Global Search */}
+        <GlobalSearch open={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} />
+        </div>
+        );
+        }

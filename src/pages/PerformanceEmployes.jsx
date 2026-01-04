@@ -129,7 +129,7 @@ export default function PerformanceEmployes() {
   }
 
   return (
-    <RoleProtection allowedRoles={['admin', 'manager']} user={user}>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -420,6 +420,6 @@ export default function PerformanceEmployes() {
           </TabsContent>
         </Tabs>
       </div>
-    </RoleProtection>
+    </div>
   );
 }
