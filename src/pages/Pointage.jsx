@@ -44,6 +44,14 @@ export default function Pointage() {
     checkAnomaliesAndNotify();
   }, []);
 
+  // Auto-refresh pour détecter les changements
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 10000); // Recharger toutes les 10 secondes
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     // Vérifier les anomalies toutes les 30 minutes
     const interval = setInterval(() => {
@@ -149,13 +157,14 @@ export default function Pointage() {
         source: 'manuel'
       });
       
+      // Attendre que le pointage soit créé
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Recharger les données
+      await loadData();
+      
       setLastPointageInfo({ type: 'entree', heure: heureActuelle });
       toast.success(`✅ Entrée enregistrée à ${heureActuelle}`, { duration: 5000 });
-      
-      // Force reload
-      setTimeout(async () => {
-        await loadData();
-      }, 500);
     } catch (e) {
       console.error('Erreur pointage entrée:', e);
       toast.error('Erreur lors du pointage d\'entrée');
@@ -179,13 +188,14 @@ export default function Pointage() {
       const dureeHeures = Math.floor(dureeMinutes / 60);
       const dureeMin = dureeMinutes % 60;
       
+      // Attendre que le pointage soit mis à jour
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Recharger les données
+      await loadData();
+      
       setLastPointageInfo({ type: 'sortie', heure: heureSortieStr, duree: `${dureeHeures}h${dureeMin}min` });
       toast.success(`✅ Sortie enregistrée à ${heureSortieStr} (Durée: ${dureeHeures}h${dureeMin}min)`, { duration: 5000 });
-      
-      // Force reload
-      setTimeout(async () => {
-        await loadData();
-      }, 500);
     } catch (e) {
       console.error('Erreur sortie:', e);
       toast.error('Erreur lors du pointage de sortie');
@@ -470,9 +480,13 @@ export default function Pointage() {
 
   const stats = calculateStats();
 
-  const pointageEnCours = pointages.find(p => 
-    p.employe_id === user?.id && p.date === today && p.statut === 'en_cours'
-  );
+  const pointageEnCours = React.useMemo(() => {
+    return pointages.find(p => 
+      p.employe_id === user?.id && 
+      p.date === today && 
+      p.statut === 'en_cours'
+    );
+  }, [pointages, user?.id, today]);
 
   const totalHeures = stats.totalHeures;
 
