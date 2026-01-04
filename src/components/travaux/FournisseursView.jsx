@@ -248,50 +248,6 @@ export default function FournisseursView({ fournisseurs, etapes, materiaux, onUp
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showProjetForm} onOpenChange={setShowProjetForm}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingProjet ? 'Modifier' : 'Nouveau'} projet avancé</DialogTitle>
-          </DialogHeader>
-          <ProjetTravauxForm
-            projet={editingProjet}
-            onSave={handleSaveProjet}
-            onCancel={() => { setShowProjetForm(false); setEditingProjet(null); }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCategorieForm} onOpenChange={setShowCategorieForm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCategorie ? 'Modifier' : 'Nouvelle'} catégorie</DialogTitle>
-          </DialogHeader>
-          <CategorieForm
-            categorie={editingCategorie}
-            projetId={selectedProjet?.id}
-            projetNom={selectedProjet?.nom}
-            onSave={handleSaveCategorie}
-            onCancel={() => { setShowCategorieForm(false); setEditingCategorie(null); }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEtapeForm} onOpenChange={setShowEtapeForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingEtape ? 'Modifier' : 'Nouvelle'} étape</DialogTitle>
-          </DialogHeader>
-          <EtapeForm
-            etape={editingEtape}
-            projetId={selectedProjet?.id}
-            categorieId={selectedCategorie?.id}
-            categorieNom={selectedCategorie?.nom}
-            onSave={handleSaveEtape}
-            onCancel={() => { setShowEtapeForm(false); setEditingEtape(null); setSelectedCategorie(null); }}
-          />
-        </DialogContent>
-      </Dialog>
-
       {/* Fournisseur Detail Dialog */}
       <Dialog open={!!selectedFournisseur} onOpenChange={() => setSelectedFournisseur(null)}>
         <DialogContent className="max-w-3xl">
