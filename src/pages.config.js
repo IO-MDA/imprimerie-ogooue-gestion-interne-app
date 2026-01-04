@@ -32,6 +32,7 @@ import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
+import TravauxV2 from './pages/TravauxV2';
 import __Layout from './Layout.jsx';
 
 
@@ -70,6 +71,7 @@ export const PAGES = {
     "Taches": Taches,
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
+    "TravauxV2": TravauxV2,
 }
 
 export const pagesConfig = {
