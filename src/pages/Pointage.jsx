@@ -75,25 +75,24 @@ export default function Pointage() {
         return;
       }
       
-      // Charger les pointages selon le rôle
-      let pointagesData;
-      if (userData.role === 'admin' || userData.role === 'manager') {
-        pointagesData = await base44.entities.Pointage.list('-date', 500);
-      } else {
-        // Opérateur : voir uniquement ses propres pointages
-        pointagesData = await base44.entities.Pointage.filter({ employe_id: userData.id }, '-date', 100);
-      }
-      
+      // Charger TOUS les pointages (simplifié pour debug)
+      const pointagesData = await base44.entities.Pointage.list('-date', 500);
       const usersData = await base44.entities.User.list();
       
       setPointages(pointagesData);
       setUsers(usersData);
       
-      console.log('✅ Pointages chargés:', pointagesData.length, 'User ID:', userData.id);
+      console.log('✅ Pointages chargés:', pointagesData.length);
+      console.log('👤 User ID:', userData.id, 'Role:', userData.role);
+      
       const today = moment().format('YYYY-MM-DD');
-      const todayPointages = pointagesData.filter(p => p.employe_id === userData.id && p.date === today);
-      console.log('📅 Pointages du jour:', todayPointages);
-      console.log('🔄 Pointage en cours:', todayPointages.find(p => p.statut === 'en_cours'));
+      const mesPointages = pointagesData.filter(p => p.employe_id === userData.id);
+      const pointagesDuJour = mesPointages.filter(p => p.date === today);
+      const enCours = pointagesDuJour.find(p => p.statut === 'en_cours');
+      
+      console.log('📊 Mes pointages:', mesPointages.length);
+      console.log('📅 Pointages du jour:', pointagesDuJour.length, pointagesDuJour);
+      console.log('🔄 Pointage en cours:', enCours ? `OUI - ID: ${enCours.id}` : 'NON');
     } catch (e) {
       console.error('Error loading data:', e);
       toast.error('Erreur de chargement');
@@ -421,6 +420,9 @@ export default function Pointage() {
 
   // Filtrage selon le rôle et les filtres actifs
   const filteredPointages = pointages.filter(p => {
+    // Filtre par rôle (opérateur voit uniquement ses pointages)
+    if (isOperateur && p.employe_id !== user?.id) return false;
+    
     // Filtre par période
     let matchPeriod = true;
     if (activeTab === 'aujourd-hui') matchPeriod = p.date === today;
@@ -527,96 +529,79 @@ export default function Pointage() {
       {/* Bouton de pointage pour employé */}
       {isOperateur && (
         <div className="space-y-4">
-          {/* Debug Info (à retirer plus tard) */}
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-slate-700">
-            <p>🔍 Debug: User ID = {user?.id}</p>
-            <p>📅 Pointages totaux: {pointages.length}</p>
-            <p>📋 Pointages du jour: {pointages.filter(p => p.employe_id === user?.id && p.date === today).length}</p>
-            <p>🔄 Pointage en cours: {pointageEnCours ? `OUI (${pointageEnCours.heure_entree})` : 'NON'}</p>
-          </div>
-
           <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Clock className={`w-7 h-7 text-white ${pointageEnCours ? 'animate-pulse' : ''}`} />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold">
-                      {pointageEnCours ? 'Pointage en cours' : 'Prêt à pointer'}
-                    </p>
-                    <p className="text-blue-100">
-                      {pointageEnCours 
-                        ? `Cliquez sur le bouton ROUGE pour sortir`
-                        : 'Cliquez pour enregistrer votre arrivée'}
-                    </p>
-                  </div>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Clock className={`w-7 h-7 text-white ${pointageEnCours ? 'animate-pulse' : ''}`} />
                 </div>
-                <div className="flex flex-col gap-3 w-full sm:w-auto">
-                  <Button 
-                    onClick={handleEntree}
-                    size="lg"
-                    disabled={!!pointageEnCours}
-                    className={`w-full font-semibold shadow-lg ${
-                      pointageEnCours 
-                        ? 'bg-white/30 text-white/50 cursor-not-allowed opacity-50' 
-                        : 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-xl'
-                    }`}
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Pointer l'entrée
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      console.log('🔴 CLIC SORTIE - Pointage en cours:', pointageEnCours);
-                      if (pointageEnCours) {
-                        handleSortie(pointageEnCours.id);
-                      } else {
-                        toast.error('Aucun pointage en cours détecté');
-                      }
-                    }}
-                    size="lg"
-                    disabled={!pointageEnCours}
-                    className={`w-full font-semibold shadow-lg transition-all ${
-                      !pointageEnCours 
-                        ? 'bg-white/30 text-white/50 cursor-not-allowed opacity-50' 
-                        : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-2xl active:scale-95'
-                    }`}
-                  >
-                    <XCircle className="w-5 h-5 mr-2" />
-                    Pointer la sortie
-                  </Button>
+                <div>
+                  <p className="text-lg font-bold">
+                    {pointageEnCours ? 'Pointage en cours' : 'Prêt à pointer'}
+                  </p>
+                  <p className="text-blue-100 text-sm">
+                    {pointageEnCours 
+                      ? `Entrée enregistrée à ${pointageEnCours.heure_entree}`
+                      : 'Enregistrez votre arrivée'}
+                  </p>
                 </div>
               </div>
 
-              {/* Affichage dernier pointage */}
+              {/* Boutons de pointage */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  onClick={handleEntree}
+                  size="lg"
+                  disabled={!!pointageEnCours}
+                  className={`w-full font-bold shadow-lg text-base py-6 ${
+                    pointageEnCours 
+                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
+                      : 'bg-white text-blue-600 hover:bg-blue-50 hover:shadow-xl'
+                  }`}
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Pointer l'entrée
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (pointageEnCours) {
+                      handleSortie(pointageEnCours.id);
+                    }
+                  }}
+                  size="lg"
+                  disabled={!pointageEnCours}
+                  className={`w-full font-bold shadow-lg text-base py-6 ${
+                    !pointageEnCours 
+                      ? 'bg-white/20 text-white/40 cursor-not-allowed' 
+                      : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-2xl'
+                  }`}
+                >
+                  <XCircle className="w-5 h-5 mr-2" />
+                  Pointer la sortie
+                </Button>
+              </div>
+
+              {/* Info du dernier pointage */}
               {lastPointageInfo && (
-                <div className="mt-4 pt-4 border-t border-white/20">
-                  <p className="text-sm text-blue-100 font-medium">
+                <div className="p-3 bg-white/10 rounded-lg">
+                  <p className="text-sm text-white font-medium text-center">
                     {lastPointageInfo.type === 'entree' 
-                      ? `✅ Dernière entrée: ${lastPointageInfo.heure}`
-                      : `✅ Dernière sortie: ${lastPointageInfo.heure} ${lastPointageInfo.duree ? `(${lastPointageInfo.duree})` : ''}`
+                      ? `✅ Entrée enregistrée à ${lastPointageInfo.heure}`
+                      : `✅ Sortie enregistrée à ${lastPointageInfo.heure} ${lastPointageInfo.duree ? `(${lastPointageInfo.duree})` : ''}`
                     }
                   </p>
                 </div>
               )}
 
+              {/* Instructions si en cours */}
               {pointageEnCours && (
-                <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-blue-100">
-                      📍 Entrée enregistrée à <span className="font-bold text-white">{pointageEnCours.heure_entree}</span>
-                    </p>
-                    <p className="text-xs text-blue-200">
-                      {moment(pointageEnCours.heure_entree, 'HH:mm').fromNow()}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-rose-500/30 rounded-lg border border-white/20">
-                    <p className="text-sm text-white font-bold text-center animate-pulse">
-                      👆 Cliquez sur le bouton ROUGE ci-dessus pour terminer votre journée
-                    </p>
-                  </div>
+                <div className="p-3 bg-rose-500/20 rounded-lg border border-white/30">
+                  <p className="text-sm text-white font-medium text-center">
+                    ⏰ Depuis {moment(pointageEnCours.heure_entree, 'HH:mm').fromNow()}
+                  </p>
+                  <p className="text-xs text-white/80 text-center mt-1">
+                    Cliquez sur "Pointer la sortie" en rouge pour terminer
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -629,7 +614,7 @@ export default function Pointage() {
                 {pointages.filter(p => p.employe_id === user?.id && p.date === today && p.statut === 'termine').map(p => (
                   <div key={p.id} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Pointage du jour terminé ✅</p>
+                      <p className="text-sm font-medium text-slate-900">✅ Pointage du jour terminé</p>
                       <p className="text-xs text-slate-600">
                         {p.heure_entree} → {p.heure_sortie} 
                         <span className="ml-2 font-medium text-emerald-600">
