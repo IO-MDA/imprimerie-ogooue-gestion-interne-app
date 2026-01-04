@@ -95,6 +95,7 @@ export default function Layout({ children, currentPageName }) {
             { name: 'Tableau de bord RH', href: 'TableauBordRH', icon: Users, roles: ['admin', 'manager'] },
             { name: 'Performance employés', href: 'PerformanceEmployes', icon: BarChart3, roles: ['admin', 'manager'] },
             { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'] },
+            { name: 'Chat interne', href: 'Chat', icon: MessageSquare, roles: ['admin', 'manager', 'user'] },
             { name: 'Commandes', href: 'Commandes', icon: Package, roles: ['admin', 'manager', 'user'] },
             { name: 'Demandes RH', href: 'DemandesRH', icon: FileCheck, roles: ['admin', 'manager', 'user'], hideForClients: true },
             { name: 'Modèles documents', href: 'ModelesDocuments', icon: FileText, roles: ['admin'] },

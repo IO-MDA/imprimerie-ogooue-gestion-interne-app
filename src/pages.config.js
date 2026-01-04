@@ -30,6 +30,7 @@ import TableauBordRH from './pages/TableauBordRH';
 import Taches from './pages/Taches';
 import TarifsClients from './pages/TarifsClients';
 import Travaux from './pages/Travaux';
+import Chat from './pages/Chat';
 import __Layout from './Layout.jsx';
 
 
@@ -66,6 +67,7 @@ export const PAGES = {
     "Taches": Taches,
     "TarifsClients": TarifsClients,
     "Travaux": Travaux,
+    "Chat": Chat,
 }
 
 export const pagesConfig = {
