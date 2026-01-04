@@ -108,37 +108,6 @@ export default function Employes() {
     });
   };
 
-  const handleEditEmployee = async () => {
-    if (!editForm.full_name || !editForm.email) {
-      toast.error('Le nom et l\'email sont obligatoires');
-      return;
-    }
-
-    try {
-      await base44.entities.User.update(selectedEmployee.id, {
-        full_name: editForm.full_name,
-        email: editForm.email,
-        telephone: editForm.telephone,
-        departement: editForm.departement,
-        poste: editForm.poste,
-        date_embauche: editForm.date_embauche,
-        salaire: editForm.salaire ? parseFloat(editForm.salaire) : null,
-        adresse: editForm.adresse
-      });
-
-      toast.success('Profil mis à jour');
-      setShowEditDialog(false);
-      loadData();
-      
-      // Refresh selected employee
-      const updatedEmployee = employees.find(e => e.id === selectedEmployee.id);
-      setSelectedEmployee({...updatedEmployee, ...editForm});
-    } catch (e) {
-      console.error('Error updating employee:', e);
-      toast.error('Erreur lors de la mise à jour');
-    }
-  };
-
   const openEditDialog = () => {
     setEditForm({
       full_name: selectedEmployee.full_name || '',
@@ -171,6 +140,8 @@ export default function Employes() {
       emp.poste?.toLowerCase().includes(searchLower)
     );
   });
+
+  const isLoading = !usersData.length && !clientsData.length;
 
   if (isLoading) {
     return (
