@@ -39,6 +39,27 @@ export default function TableauBordRH() {
   const [demandes, setDemandes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(moment().format('YYYY-MM'));
+  
+  // États pour édition
+  const [editingPointage, setEditingPointage] = useState(null);
+  const [editingAvance, setEditingAvance] = useState(null);
+  const [showAddPointage, setShowAddPointage] = useState(false);
+  const [showAddAvance, setShowAddAvance] = useState(false);
+  const [newPointage, setNewPointage] = useState({
+    employe_id: '',
+    date: moment().format('YYYY-MM-DD'),
+    heure_entree: '08:00',
+    heure_sortie: '17:00',
+    statut: 'termine'
+  });
+  const [newAvance, setNewAvance] = useState({
+    employe_id: '',
+    type_avance: 'salaire',
+    montant: 0,
+    date_avance: moment().format('YYYY-MM-DD'),
+    mois_comptable: moment().format('YYYY-MM'),
+    commentaire: ''
+  });
 
   useEffect(() => {
     loadData();
