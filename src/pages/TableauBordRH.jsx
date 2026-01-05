@@ -530,8 +530,67 @@ export default function TableauBordRH() {
           {/* Salaires & Avances */}
           <TabsContent value="salaires" className="space-y-4">
             <Card className="border-0 shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Avances du mois</CardTitle>
+                {isAdmin && (
+                  <Button onClick={() => setShowAddAvance(true)} size="sm" className="bg-emerald-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter une avance
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {avancesMois.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8">Aucune avance pour ce mois</p>
+                  ) : (
+                    avancesMois.map(avance => (
+                      <div key={avance.id} className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-slate-900">{avance.nom_employe}</p>
+                            <p className="text-xs text-slate-500">{moment(avance.date_avance).format('DD/MM/YYYY')} • {avance.type_avance}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={avance.statut === 'validee' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
+                              {avance.statut}
+                            </Badge>
+                            {isAdmin && (
+                              <>
+                                <Button variant="ghost" size="icon" onClick={() => setEditingAvance(avance)}>
+                                  <Edit className="w-4 h-4 text-blue-600" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteAvance(avance.id)}>
+                                  <Trash2 className="w-4 h-4 text-rose-600" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-slate-500">Montant</p>
+                            <p className="font-bold text-emerald-700">{formatMontant(avance.montant)} F</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Mois comptable</p>
+                            <p className="font-bold text-slate-900">{avance.mois_comptable}</p>
+                          </div>
+                        </div>
+                        {avance.commentaire && (
+                          <p className="text-xs text-slate-500 mt-2 italic">{avance.commentaire}</p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Résumé par employé */}
+            <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Salaires et avances par employé</CardTitle>
+                <CardTitle className="text-lg">Résumé salaires et avances par employé</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
