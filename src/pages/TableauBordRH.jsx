@@ -99,6 +99,126 @@ export default function TableauBordRH() {
 
   const isAdmin = user?.role === 'admin';
 
+  // Fonctions CRUD Pointages
+  const handleAddPointage = async () => {
+    if (!newPointage.employe_id) {
+      toast.error('Veuillez sélectionner un employé');
+      return;
+    }
+    const employe = users.find(u => u.id === newPointage.employe_id);
+    const entree = moment(`${newPointage.date} ${newPointage.heure_entree}`);
+    const sortie = moment(`${newPointage.date} ${newPointage.heure_sortie}`);
+    const duree = sortie.diff(entree, 'minutes');
+    
+    const pointageData = {
+      employe_id: newPointage.employe_id,
+      employe_nom: employe?.full_name || '',
+      employe_email: employe?.email || '',
+      date: newPointage.date,
+      heure_entree: newPointage.heure_entree,
+      heure_sortie: newPointage.heure_sortie,
+      duree_minutes: duree > 0 ? duree : 0,
+      statut: newPointage.statut,
+      source: 'manuel'
+    };
+    
+    await base44.entities.Pointage.create(pointageData);
+    toast.success('Pointage ajouté');
+    setShowAddPointage(false);
+    setNewPointage({
+      employe_id: '',
+      date: moment().format('YYYY-MM-DD'),
+      heure_entree: '08:00',
+      heure_sortie: '17:00',
+      statut: 'termine'
+    });
+    loadData();
+  };
+
+  const handleUpdatePointage = async () => {
+    if (!editingPointage) return;
+    const entree = moment(`${editingPointage.date} ${editingPointage.heure_entree}`);
+    const sortie = moment(`${editingPointage.date} ${editingPointage.heure_sortie}`);
+    const duree = sortie.diff(entree, 'minutes');
+    
+    await base44.entities.Pointage.update(editingPointage.id, {
+      date: editingPointage.date,
+      heure_entree: editingPointage.heure_entree,
+      heure_sortie: editingPointage.heure_sortie,
+      duree_minutes: duree > 0 ? duree : 0,
+      statut: editingPointage.statut
+    });
+    toast.success('Pointage modifié');
+    setEditingPointage(null);
+    loadData();
+  };
+
+  const handleDeletePointage = async (id) => {
+    if (confirm('Supprimer ce pointage ?')) {
+      await base44.entities.Pointage.delete(id);
+      toast.success('Pointage supprimé');
+      loadData();
+    }
+  };
+
+  // Fonctions CRUD Avances
+  const handleAddAvance = async () => {
+    if (!newAvance.employe_id || !newAvance.montant) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    const employe = users.find(u => u.id === newAvance.employe_id);
+    
+    const avanceData = {
+      employe_id: newAvance.employe_id,
+      nom_employe: employe?.full_name || '',
+      email_employe: employe?.email || '',
+      type_avance: newAvance.type_avance,
+      montant: parseFloat(newAvance.montant),
+      date_avance: newAvance.date_avance,
+      mois_comptable: newAvance.mois_comptable,
+      commentaire: newAvance.commentaire,
+      statut: 'validee',
+      cree_par: user?.id,
+      cree_par_nom: user?.full_name
+    };
+    
+    await base44.entities.Avance.create(avanceData);
+    toast.success('Avance ajoutée');
+    setShowAddAvance(false);
+    setNewAvance({
+      employe_id: '',
+      type_avance: 'salaire',
+      montant: 0,
+      date_avance: moment().format('YYYY-MM-DD'),
+      mois_comptable: moment().format('YYYY-MM'),
+      commentaire: ''
+    });
+    loadData();
+  };
+
+  const handleUpdateAvance = async () => {
+    if (!editingAvance) return;
+    await base44.entities.Avance.update(editingAvance.id, {
+      montant: parseFloat(editingAvance.montant),
+      date_avance: editingAvance.date_avance,
+      mois_comptable: editingAvance.mois_comptable,
+      commentaire: editingAvance.commentaire,
+      statut: editingAvance.statut
+    });
+    toast.success('Avance modifiée');
+    setEditingAvance(null);
+    loadData();
+  };
+
+  const handleDeleteAvance = async (id) => {
+    if (confirm('Supprimer cette avance ?')) {
+      await base44.entities.Avance.delete(id);
+      toast.success('Avance supprimée');
+      loadData();
+    }
+  };
+
   // Calculs pour le mois sélectionné
   const pointagesMois = pointages.filter(p => 
     moment(p.date).format('YYYY-MM') === selectedMonth
