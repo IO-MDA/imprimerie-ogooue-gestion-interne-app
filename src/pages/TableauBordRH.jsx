@@ -468,39 +468,59 @@ export default function TableauBordRH() {
           {/* Pointages */}
           <TabsContent value="pointages" className="space-y-4">
             <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Détail des pointages par employé</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Détail des pointages</CardTitle>
+                {isAdmin && (
+                  <Button onClick={() => setShowAddPointage(true)} size="sm" className="bg-blue-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter un pointage
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {statsEmployes
-                    .filter(e => e.heuresTravaillees > 0 || e.joursPresents > 0)
-                    .sort((a, b) => b.heuresTravaillees - a.heuresTravaillees)
-                    .map(employe => (
-                      <div key={employe.id} className="p-4 bg-slate-50 rounded-lg">
+                  {pointagesMois.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8">Aucun pointage pour ce mois</p>
+                  ) : (
+                    pointagesMois.map(pointage => (
+                      <div key={pointage.id} className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <p className="font-semibold text-slate-900">{employe.nom}</p>
-                            <p className="text-xs text-slate-500">{employe.email}</p>
+                            <p className="font-semibold text-slate-900">{pointage.employe_nom}</p>
+                            <p className="text-xs text-slate-500">{moment(pointage.date).format('DD/MM/YYYY')}</p>
                           </div>
-                          <Badge className="bg-blue-100 text-blue-700">
-                            {employe.role}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className={pointage.statut === 'termine' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
+                              {pointage.statut}
+                            </Badge>
+                            {isAdmin && (
+                              <>
+                                <Button variant="ghost" size="icon" onClick={() => setEditingPointage(pointage)}>
+                                  <Edit className="w-4 h-4 text-blue-600" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeletePointage(pointage.id)}>
+                                  <Trash2 className="w-4 h-4 text-rose-600" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
                           <div>
-                            <p className="text-slate-500">Heures travaillées</p>
-                            <p className="font-bold text-slate-900">{employe.heuresTravaillees}h</p>
+                            <p className="text-slate-500">Entrée</p>
+                            <p className="font-bold text-slate-900">{pointage.heure_entree}</p>
                           </div>
                           <div>
-                            <p className="text-slate-500">Jours présents</p>
-                            <p className="font-bold text-slate-900">{employe.joursPresents} jours</p>
+                            <p className="text-slate-500">Sortie</p>
+                            <p className="font-bold text-slate-900">{pointage.heure_sortie || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Durée</p>
+                            <p className="font-bold text-slate-900">{Math.round((pointage.duree_minutes || 0) / 60 * 10) / 10}h</p>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  {statsEmployes.filter(e => e.heuresTravaillees > 0).length === 0 && (
-                    <p className="text-center text-slate-500 py-8">Aucun pointage pour ce mois</p>
+                    ))
                   )}
                 </div>
               </CardContent>
