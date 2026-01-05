@@ -392,7 +392,7 @@ export default function PerformanceEmployes() {
             <div className="grid gap-4">
               {employesAvecStats.map(emp => (
                 <Card key={emp.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                  onClick={() => setSelectedEmploye(emp)}>
+                  onClick={() => setShowEmployeDetail(emp)}>
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex gap-4 flex-1">
