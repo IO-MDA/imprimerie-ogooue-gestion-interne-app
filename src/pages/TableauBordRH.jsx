@@ -713,6 +713,227 @@ export default function TableauBordRH() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog Ajouter Pointage */}
+        <Dialog open={showAddPointage} onOpenChange={setShowAddPointage}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ajouter un pointage</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Employé *</label>
+                <Select value={newPointage.employe_id} onValueChange={(v) => setNewPointage({...newPointage, employe_id: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un employé" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Date *</label>
+                <Input type="date" value={newPointage.date} onChange={(e) => setNewPointage({...newPointage, date: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Heure entrée</label>
+                  <Input type="time" value={newPointage.heure_entree} onChange={(e) => setNewPointage({...newPointage, heure_entree: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Heure sortie</label>
+                  <Input type="time" value={newPointage.heure_sortie} onChange={(e) => setNewPointage({...newPointage, heure_sortie: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Statut</label>
+                <Select value={newPointage.statut} onValueChange={(v) => setNewPointage({...newPointage, statut: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="termine">Terminé</SelectItem>
+                    <SelectItem value="en_cours">En cours</SelectItem>
+                    <SelectItem value="anomalie">Anomalie</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddPointage(false)}>Annuler</Button>
+              <Button onClick={handleAddPointage} className="bg-blue-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Modifier Pointage */}
+        <Dialog open={!!editingPointage} onOpenChange={() => setEditingPointage(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier le pointage</DialogTitle>
+            </DialogHeader>
+            {editingPointage && (
+              <div className="space-y-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="font-medium">{editingPointage.employe_nom}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Date *</label>
+                  <Input type="date" value={editingPointage.date} onChange={(e) => setEditingPointage({...editingPointage, date: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Heure entrée</label>
+                    <Input type="time" value={editingPointage.heure_entree} onChange={(e) => setEditingPointage({...editingPointage, heure_entree: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Heure sortie</label>
+                    <Input type="time" value={editingPointage.heure_sortie || ''} onChange={(e) => setEditingPointage({...editingPointage, heure_sortie: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Statut</label>
+                  <Select value={editingPointage.statut} onValueChange={(v) => setEditingPointage({...editingPointage, statut: v})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="termine">Terminé</SelectItem>
+                      <SelectItem value="en_cours">En cours</SelectItem>
+                      <SelectItem value="anomalie">Anomalie</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingPointage(null)}>Annuler</Button>
+              <Button onClick={handleUpdatePointage} className="bg-blue-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Ajouter Avance */}
+        <Dialog open={showAddAvance} onOpenChange={setShowAddAvance}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ajouter une avance</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Employé *</label>
+                <Select value={newAvance.employe_id} onValueChange={(v) => setNewAvance({...newAvance, employe_id: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un employé" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Type d'avance</label>
+                <Select value={newAvance.type_avance} onValueChange={(v) => setNewAvance({...newAvance, type_avance: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="salaire">Avance sur salaire</SelectItem>
+                    <SelectItem value="loyer">Loyer</SelectItem>
+                    <SelectItem value="autre_charge">Autre charge</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Montant (FCFA) *</label>
+                <Input type="number" value={newAvance.montant} onChange={(e) => setNewAvance({...newAvance, montant: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Date de versement</label>
+                <Input type="date" value={newAvance.date_avance} onChange={(e) => setNewAvance({...newAvance, date_avance: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Mois comptable</label>
+                <Input type="month" value={newAvance.mois_comptable} onChange={(e) => setNewAvance({...newAvance, mois_comptable: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Commentaire</label>
+                <Input value={newAvance.commentaire} onChange={(e) => setNewAvance({...newAvance, commentaire: e.target.value})} placeholder="Note optionnelle..." />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddAvance(false)}>Annuler</Button>
+              <Button onClick={handleAddAvance} className="bg-emerald-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Modifier Avance */}
+        <Dialog open={!!editingAvance} onOpenChange={() => setEditingAvance(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier l'avance</DialogTitle>
+            </DialogHeader>
+            {editingAvance && (
+              <div className="space-y-4">
+                <div className="p-3 bg-emerald-50 rounded-lg">
+                  <p className="font-medium">{editingAvance.nom_employe}</p>
+                  <p className="text-sm text-slate-500">{editingAvance.type_avance}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Montant (FCFA) *</label>
+                  <Input type="number" value={editingAvance.montant} onChange={(e) => setEditingAvance({...editingAvance, montant: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Date de versement</label>
+                  <Input type="date" value={editingAvance.date_avance} onChange={(e) => setEditingAvance({...editingAvance, date_avance: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Mois comptable</label>
+                  <Input type="month" value={editingAvance.mois_comptable} onChange={(e) => setEditingAvance({...editingAvance, mois_comptable: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Statut</label>
+                  <Select value={editingAvance.statut} onValueChange={(v) => setEditingAvance({...editingAvance, statut: v})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="validee">Validée</SelectItem>
+                      <SelectItem value="deduite">Déduite</SelectItem>
+                      <SelectItem value="annulee">Annulée</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Commentaire</label>
+                  <Input value={editingAvance.commentaire || ''} onChange={(e) => setEditingAvance({...editingAvance, commentaire: e.target.value})} />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingAvance(null)}>Annuler</Button>
+              <Button onClick={handleUpdateAvance} className="bg-emerald-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </RoleProtection>
   );
