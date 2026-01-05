@@ -81,6 +81,57 @@ export default function PerformanceEmployes() {
     }
   };
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'manager';
+
+  // Fonctions CRUD Objectifs
+  const handleAddObjectif = async () => {
+    if (!newObjectif.responsable_id || !newObjectif.objectif_recettes) {
+      toast.error('Veuillez remplir les champs obligatoires');
+      return;
+    }
+    const employe = employes.find(e => e.id === newObjectif.responsable_id);
+    
+    await base44.entities.Objectif.create({
+      ...newObjectif,
+      responsable_nom: employe?.full_name || '',
+      recettes_reelles: 0,
+      statut: 'en_cours'
+    });
+    toast.success('Objectif créé');
+    setShowAddObjectif(false);
+    setNewObjectif({
+      type: 'mensuel',
+      categorie: 'individuel',
+      periode: moment().format('YYYY-MM'),
+      responsable_id: '',
+      responsable_nom: '',
+      objectif_recettes: 0,
+      description: ''
+    });
+    loadData();
+  };
+
+  const handleUpdateObjectif = async () => {
+    if (!editingObjectif) return;
+    await base44.entities.Objectif.update(editingObjectif.id, {
+      objectif_recettes: parseFloat(editingObjectif.objectif_recettes),
+      recettes_reelles: parseFloat(editingObjectif.recettes_reelles || 0),
+      description: editingObjectif.description,
+      statut: editingObjectif.statut
+    });
+    toast.success('Objectif modifié');
+    setEditingObjectif(null);
+    loadData();
+  };
+
+  const handleDeleteObjectif = async (id) => {
+    if (confirm('Supprimer cet objectif ?')) {
+      await base44.entities.Objectif.delete(id);
+      toast.success('Objectif supprimé');
+      loadData();
+    }
+  };
+
   // Calculer les statistiques par employé
   const getEmployeStats = (employeId) => {
     const employePointages = pointages.filter(p => 
