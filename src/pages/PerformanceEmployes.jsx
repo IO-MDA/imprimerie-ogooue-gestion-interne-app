@@ -463,37 +463,238 @@ export default function PerformanceEmployes() {
 
           {/* Objectifs */}
           <TabsContent value="objectifs" className="space-y-4">
-            {objectifs.filter(o => o.categorie === 'individuel').map(obj => (
-              <Card key={obj.id} className="border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-slate-900 mb-1">{obj.responsable_nom}</h3>
-                      <p className="text-sm text-slate-600">Période: {obj.periode}</p>
-                    </div>
-                    <Badge className={obj.statut === 'atteint' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
-                      {obj.statut}
-                    </Badge>
-                  </div>
-                  {obj.objectif_recettes && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Objectif recettes</span>
-                        <span className="font-medium">{Math.round((obj.recettes_reelles / obj.objectif_recettes) * 100)}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all"
-                          style={{ width: `${Math.min((obj.recettes_reelles / obj.objectif_recettes) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+            {isAdmin && (
+              <div className="flex justify-end">
+                <Button onClick={() => setShowAddObjectif(true)} className="bg-blue-600">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un objectif
+                </Button>
+              </div>
+            )}
+            {objectifs.filter(o => o.categorie === 'individuel').length === 0 ? (
+              <Card className="border-0 shadow-lg">
+                <CardContent className="py-12 text-center">
+                  <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">Aucun objectif individuel défini</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              objectifs.filter(o => o.categorie === 'individuel').map(obj => (
+                <Card key={obj.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">{obj.responsable_nom}</h3>
+                        <p className="text-sm text-slate-600">Période: {obj.periode}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={obj.statut === 'atteint' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}>
+                          {obj.statut}
+                        </Badge>
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => setEditingObjectif(obj)}>
+                              <Edit className="w-4 h-4 text-blue-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteObjectif(obj.id)}>
+                              <Trash2 className="w-4 h-4 text-rose-600" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {obj.objectif_recettes && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Objectif: {obj.objectif_recettes?.toLocaleString()} F</span>
+                          <span className="font-medium">{Math.round((obj.recettes_reelles / obj.objectif_recettes) * 100) || 0}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all"
+                            style={{ width: `${Math.min((obj.recettes_reelles / obj.objectif_recettes) * 100 || 0, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Réalisé: {obj.recettes_reelles?.toLocaleString() || 0} F</p>
+                      </div>
+                    )}
+                    {obj.description && (
+                      <p className="text-sm text-slate-600 mt-3 italic">{obj.description}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </TabsContent>
         </Tabs>
+
+        {/* Dialog Détail Employé */}
+        <Dialog open={!!showEmployeDetail} onOpenChange={() => setShowEmployeDetail(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Détail de {showEmployeDetail?.full_name}</DialogTitle>
+            </DialogHeader>
+            {showEmployeDetail && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-semibold">
+                    {showEmployeDetail.full_name?.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">{showEmployeDetail.full_name}</h3>
+                    <p className="text-slate-500">{showEmployeDetail.email}</p>
+                    <Badge className="mt-2">{showEmployeDetail.role}</Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Score global</p>
+                    <p className="text-2xl font-bold text-blue-700">{showEmployeDetail.stats.score}%</p>
+                  </div>
+                  <div className="p-4 bg-emerald-50 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Présence</p>
+                    <p className="text-2xl font-bold text-emerald-700">{Math.round(showEmployeDetail.stats.tauxPresence)}%</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Heures</p>
+                    <p className="text-2xl font-bold text-purple-700">{Math.round(showEmployeDetail.stats.heuresTravaillees)}h</p>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">Tâches</p>
+                    <p className="text-2xl font-bold text-amber-700">{showEmployeDetail.stats.tachesTerminees}/{showEmployeDetail.stats.nombreTaches}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold">Détails des performances</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-slate-500">Taux de complétion tâches</p>
+                      <p className="font-bold">{Math.round(showEmployeDetail.stats.tauxCompletionTaches)}%</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-slate-500">Demandes validées</p>
+                      <p className="font-bold">{showEmployeDetail.stats.demandesValidees}/{showEmployeDetail.stats.nombreDemandes}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEmployeDetail(null)}>Fermer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Ajouter Objectif */}
+        <Dialog open={showAddObjectif} onOpenChange={setShowAddObjectif}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ajouter un objectif</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Employé *</label>
+                <Select value={newObjectif.responsable_id} onValueChange={(v) => setNewObjectif({...newObjectif, responsable_id: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un employé" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employes.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Type</label>
+                <Select value={newObjectif.type} onValueChange={(v) => setNewObjectif({...newObjectif, type: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensuel">Mensuel</SelectItem>
+                    <SelectItem value="annuel">Annuel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Période</label>
+                <Input 
+                  type={newObjectif.type === 'mensuel' ? 'month' : 'number'} 
+                  value={newObjectif.periode}
+                  onChange={(e) => setNewObjectif({...newObjectif, periode: e.target.value})}
+                  placeholder={newObjectif.type === 'annuel' ? '2025' : ''}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Objectif recettes (FCFA) *</label>
+                <Input type="number" value={newObjectif.objectif_recettes} onChange={(e) => setNewObjectif({...newObjectif, objectif_recettes: e.target.value})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <Textarea value={newObjectif.description} onChange={(e) => setNewObjectif({...newObjectif, description: e.target.value})} placeholder="Description de l'objectif..." />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddObjectif(false)}>Annuler</Button>
+              <Button onClick={handleAddObjectif} className="bg-blue-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Modifier Objectif */}
+        <Dialog open={!!editingObjectif} onOpenChange={() => setEditingObjectif(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier l'objectif</DialogTitle>
+            </DialogHeader>
+            {editingObjectif && (
+              <div className="space-y-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="font-medium">{editingObjectif.responsable_nom}</p>
+                  <p className="text-sm text-slate-500">Période: {editingObjectif.periode}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Objectif recettes (FCFA) *</label>
+                  <Input type="number" value={editingObjectif.objectif_recettes} onChange={(e) => setEditingObjectif({...editingObjectif, objectif_recettes: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Recettes réalisées (FCFA)</label>
+                  <Input type="number" value={editingObjectif.recettes_reelles || 0} onChange={(e) => setEditingObjectif({...editingObjectif, recettes_reelles: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Statut</label>
+                  <Select value={editingObjectif.statut} onValueChange={(v) => setEditingObjectif({...editingObjectif, statut: v})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en_cours">En cours</SelectItem>
+                      <SelectItem value="atteint">Atteint</SelectItem>
+                      <SelectItem value="non_atteint">Non atteint</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description</label>
+                  <Textarea value={editingObjectif.description || ''} onChange={(e) => setEditingObjectif({...editingObjectif, description: e.target.value})} />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingObjectif(null)}>Annuler</Button>
+              <Button onClick={handleUpdateObjectif} className="bg-blue-600">
+                <Save className="w-4 h-4 mr-2" />
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
