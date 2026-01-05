@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, 
   Clock, 
@@ -13,7 +16,11 @@ import {
   Calendar,
   FileText,
   CheckCircle,
-  XCircle
+  XCircle,
+  Plus,
+  Edit,
+  Trash2,
+  Save
 } from 'lucide-react';
 import RoleProtection from '@/components/auth/RoleProtection';
 import RapportFinancierRH from '@/components/rh/RapportFinancierRH';
@@ -21,6 +28,7 @@ import AnalysePredictiveRH from '@/components/rh/AnalysePredictiveRH';
 import moment from 'moment';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { toast } from 'sonner';
 
 export default function TableauBordRH() {
   const [user, setUser] = useState(null);
