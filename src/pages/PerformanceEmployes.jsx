@@ -37,6 +37,20 @@ export default function PerformanceEmployes() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEmploye, setSelectedEmploye] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(moment().format('YYYY-MM'));
+  
+  // États pour édition
+  const [showEmployeDetail, setShowEmployeDetail] = useState(null);
+  const [editingObjectif, setEditingObjectif] = useState(null);
+  const [showAddObjectif, setShowAddObjectif] = useState(false);
+  const [newObjectif, setNewObjectif] = useState({
+    type: 'mensuel',
+    categorie: 'individuel',
+    periode: moment().format('YYYY-MM'),
+    responsable_id: '',
+    responsable_nom: '',
+    objectif_recettes: 0,
+    description: ''
+  });
 
   useEffect(() => {
     loadData();
