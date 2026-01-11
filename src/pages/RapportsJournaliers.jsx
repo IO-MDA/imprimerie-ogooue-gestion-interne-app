@@ -21,6 +21,7 @@ import {
   Trash2
 } from 'lucide-react';
 import RapportForm from '@/components/rapports/RapportForm';
+import SpreadsheetEditor from '@/components/rapports/SpreadsheetEditor';
 import moment from 'moment';
 import { toast } from 'sonner';
 
@@ -35,9 +36,12 @@ const SERVICES = [
 
 export default function RapportsJournaliers() {
   const [rapports, setRapports] = useState([]);
+  const [dailyReports, setDailyReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showSpreadsheet, setShowSpreadsheet] = useState(false);
   const [editingRapport, setEditingRapport] = useState(null);
+  const [editingDailyReport, setEditingDailyReport] = useState(null);
   const [selectedRapport, setSelectedRapport] = useState(null);
   const [user, setUser] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -57,11 +61,13 @@ export default function RapportsJournaliers() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [rapportsData, userData] = await Promise.all([
+    const [rapportsData, dailyReportsData, userData] = await Promise.all([
       base44.entities.RapportJournalier.list('-date', 200),
+      base44.entities.DailyReport.list('-date', 200),
       base44.auth.me()
     ]);
     setRapports(rapportsData);
+    setDailyReports(dailyReportsData);
     setUser(userData);
     setIsLoading(false);
   };
@@ -255,14 +261,14 @@ export default function RapportsJournaliers() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Rapports journaliers</h1>
-          <p className="text-slate-500">Gérez les rapports quotidiens de chaque service</p>
+          <p className="text-slate-500">Gérez les rapports quotidiens en mode tableur</p>
         </div>
         <Button 
-          onClick={() => { setEditingRapport(null); setShowForm(true); }}
+          onClick={() => { setEditingDailyReport(null); setShowSpreadsheet(true); }}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Nouveau rapport
+          Nouveau rapport (Mode Tableur)
         </Button>
       </div>
 
@@ -320,19 +326,19 @@ export default function RapportsJournaliers() {
         <div className="flex items-center justify-center h-48">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      ) : filteredRapports.length === 0 ? (
+      ) : dailyReports.length === 0 ? (
         <Card className="border-0 shadow-lg shadow-slate-200/50">
           <CardContent className="py-16 text-center">
             <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-500">Aucun rapport trouvé</p>
-            <Button onClick={() => setShowForm(true)} variant="outline" className="mt-4">
+            <Button onClick={() => setShowSpreadsheet(true)} variant="outline" className="mt-4">
               Créer un rapport
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredRapports.map(rapport => (
+          {dailyReports.map(rapport => (
             <Card key={rapport.id} className="border-0 shadow-lg shadow-slate-200/50 hover:shadow-xl transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -344,49 +350,55 @@ export default function RapportsJournaliers() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-slate-900">Rapport du {moment(rapport.date).format('DD MMMM YYYY')}</h3>
                         {getStatusBadge(rapport.statut)}
-                        {rapport.verrouille && <Lock className="w-4 h-4 text-slate-400" />}
+                        {rapport.statut === 'verrouille' && <Lock className="w-4 h-4 text-slate-400" />}
                       </div>
                       <p className="text-sm text-slate-500 mt-1">
                         <Calendar className="w-3 h-3 inline mr-1" />
                         Opérateur: {rapport.operateur_nom}
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        {rapport.services_data?.filter(s => s.recettes > 0 || s.depenses > 0).length || 0} service(s) avec données
+                        Mode tableur Excel
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-sm text-slate-500">Recettes</p>
-                      <p className="font-bold text-emerald-600">{(rapport.total_recettes || 0).toLocaleString()} FCFA</p>
+                      <p className="text-sm text-slate-500">Total Entrées</p>
+                      <p className="font-bold text-emerald-600">{(rapport.total_entrees || 0).toLocaleString()} XAF</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-slate-500">Dépenses</p>
-                      <p className="font-bold text-rose-500">{(rapport.total_depenses || 0).toLocaleString()} FCFA</p>
+                      <p className="text-sm text-slate-500">Total Sorties</p>
+                      <p className="font-bold text-rose-500">{(rapport.total_sorties || 0).toLocaleString()} XAF</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-slate-500">Bénéfice</p>
-                      <p className={`font-bold ${(rapport.total_recettes - rapport.total_depenses) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
-                        {((rapport.total_recettes || 0) - (rapport.total_depenses || 0)).toLocaleString()} FCFA
+                      <p className="text-sm text-slate-500">Caisse Journée</p>
+                      <p className={`font-bold ${(rapport.caisse_journee) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                        {(rapport.caisse_journee || 0).toLocaleString()} XAF
                       </p>
                     </div>
+                    {rapport.ecart !== null && rapport.ecart !== undefined && (
+                      <div className="text-right">
+                        <p className="text-sm text-slate-500">Écart</p>
+                        <p className={`font-bold ${rapport.ecart >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {rapport.ecart.toLocaleString()} XAF
+                        </p>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" onClick={() => setSelectedRapport(rapport)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      {(!rapport.verrouille || isAdmin) && (
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(rapport)}>
+                      {(rapport.statut === 'brouillon' || isAdmin) && (
+                        <Button variant="ghost" size="icon" onClick={() => { setEditingDailyReport(rapport); setShowSpreadsheet(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>
                       )}
-                      {rapport.verrouille && !isAdmin && (
-                        <Button variant="ghost" size="sm" onClick={() => requestModification(rapport)}>
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          Demander modif.
-                        </Button>
-                      )}
                       {isAdmin && rapport.statut === 'soumis' && (
-                        <Button variant="ghost" size="icon" onClick={() => handleValidate(rapport)} className="text-emerald-600">
+                        <Button variant="ghost" size="icon" onClick={async () => {
+                          await base44.entities.DailyReport.update(rapport.id, { statut: 'verrouille' });
+                          toast.success('Rapport verrouillé');
+                          loadData();
+                        }} className="text-emerald-600">
                           <CheckCircle className="w-4 h-4" />
                         </Button>
                       )}
@@ -394,7 +406,17 @@ export default function RapportsJournaliers() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => { setRapportToDelete(rapport); setShowDeleteDialog(true); }}
+                          onClick={async () => { 
+                            if (confirm('Supprimer ce rapport ?')) {
+                              const rows = await base44.entities.DailyReportRow.filter({ report_id: rapport.id });
+                              for (const row of rows) {
+                                await base44.entities.DailyReportRow.delete(row.id);
+                              }
+                              await base44.entities.DailyReport.delete(rapport.id);
+                              toast.success('Rapport supprimé');
+                              loadData();
+                            }
+                          }}
                           className="text-rose-600"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -409,7 +431,23 @@ export default function RapportsJournaliers() {
         </div>
       )}
 
-      {/* Form Dialog */}
+      {/* Spreadsheet Editor Dialog */}
+      <Dialog open={showSpreadsheet} onOpenChange={setShowSpreadsheet}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingDailyReport ? 'Modifier le rapport' : 'Nouveau rapport journalier - Mode Tableur'}
+            </DialogTitle>
+          </DialogHeader>
+          <SpreadsheetEditor 
+            report={editingDailyReport}
+            onSave={loadData}
+            onClose={() => { setShowSpreadsheet(false); setEditingDailyReport(null); }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Form Dialog (ancien mode - optionnel) */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
