@@ -65,13 +65,29 @@ export default function Evenements() {
     if (existingEvents.length === 0) {
       const currentYear = moment().year();
       const defaultEvents = [
+        // Fêtes nationales du Gabon
         { nom: "Nouvel An", date_debut: `${currentYear}-01-01`, type: "fete_nationale", description: "Célébration du Nouvel An", opportunite_pub: "Cartes de vœux, calendriers, flyers promotionnels", recurrent_annuel: true },
         { nom: "Fête du Travail", date_debut: `${currentYear}-05-01`, type: "fete_nationale", description: "Journée internationale des travailleurs", opportunite_pub: "Affiches syndicales, bannières événementielles", recurrent_annuel: true },
-        { nom: "Fête de l'Indépendance", date_debut: `${currentYear}-08-17`, type: "fete_nationale", description: "Indépendance du Gabon", opportunite_pub: "Drapeaux, affiches patriotiques, programmes événementiels", recurrent_annuel: true },
-        { nom: "Rentrée Scolaire", date_debut: `${currentYear}-09-15`, type: "rentree_scolaire", description: "Début de l'année scolaire", opportunite_pub: "Fournitures scolaires, cahiers personnalisés, listes de classe", recurrent_annuel: true },
+        { nom: "Fête de l'Indépendance", date_debut: `${currentYear}-08-17`, type: "fete_nationale", description: "Indépendance du Gabon (17 août 1960)", opportunite_pub: "Drapeaux gabonais, affiches patriotiques, programmes événementiels, t-shirts aux couleurs nationales", recurrent_annuel: true },
+        { nom: "Fête de la Rénovation", date_debut: `${currentYear}-03-12`, type: "fete_nationale", description: "Commémoration du 12 mars 1968", opportunite_pub: "Affiches commémoratives, programmes officiels", recurrent_annuel: true },
+        
+        // Fêtes religieuses
         { nom: "Noël", date_debut: `${currentYear}-12-25`, type: "fete_religieuse", description: "Fête de Noël", opportunite_pub: "Cartes de vœux, calendriers de l'Avent, menus de fête", recurrent_annuel: true },
+        { nom: "Vendredi Saint", date_debut: `${currentYear}-04-18`, type: "fete_religieuse", description: "Vendredi Saint (date variable)", opportunite_pub: "Cartes religieuses, programmes d'église", recurrent_annuel: true },
+        { nom: "Lundi de Pâques", date_debut: `${currentYear}-04-21`, type: "fete_religieuse", description: "Lundi de Pâques (date variable)", opportunite_pub: "Cartes de Pâques, affiches événementielles", recurrent_annuel: true },
+        { nom: "Lundi de Pentecôte", date_debut: `${currentYear}-06-09`, type: "fete_religieuse", description: "Lundi de Pentecôte (date variable)", opportunite_pub: "Programmes religieux", recurrent_annuel: true },
+        { nom: "Assomption", date_debut: `${currentYear}-08-15`, type: "fete_religieuse", description: "Assomption de Marie", opportunite_pub: "Cartes religieuses", recurrent_annuel: true },
+        { nom: "Toussaint", date_debut: `${currentYear}-11-01`, type: "fete_religieuse", description: "Fête de la Toussaint", opportunite_pub: "Cartes de condoléances, couronnes", recurrent_annuel: true },
+        { nom: "Aid el-Fitr", date_debut: `${currentYear}-04-10`, type: "fete_religieuse", description: "Fin du Ramadan (date variable)", opportunite_pub: "Cartes de vœux, affiches festives", recurrent_annuel: true },
+        { nom: "Aid el-Adha", date_debut: `${currentYear}-06-16`, type: "fete_religieuse", description: "Fête du mouton (date variable)", opportunite_pub: "Cartes de vœux, affiches", recurrent_annuel: true },
+        
+        // Rentrée scolaire
+        { nom: "Rentrée Scolaire", date_debut: `${currentYear}-09-15`, type: "rentree_scolaire", description: "Début de l'année scolaire", opportunite_pub: "Fournitures scolaires, cahiers personnalisés, listes de classe, étiquettes nominatives", recurrent_annuel: true },
+        
+        // Événements commerciaux
         { nom: "Saint-Valentin", date_debut: `${currentYear}-02-14`, type: "commercial", description: "Fête des amoureux", opportunite_pub: "Cartes romantiques, bons cadeaux, packaging spécial", recurrent_annuel: true },
         { nom: "Fête des Mères", date_debut: `${currentYear}-05-26`, type: "commercial", description: "Fête des Mères", opportunite_pub: "Cartes personnalisées, albums photo, certificats", recurrent_annuel: true },
+        { nom: "Fête des Pères", date_debut: `${currentYear}-06-15`, type: "commercial", description: "Fête des Pères", opportunite_pub: "Cartes personnalisées, certificats", recurrent_annuel: true },
         { nom: "Black Friday", date_debut: `${currentYear}-11-29`, type: "commercial", description: "Journée de promotions", opportunite_pub: "Flyers promotionnels, catalogues, affiches publicitaires", recurrent_annuel: true }
       ];
       
