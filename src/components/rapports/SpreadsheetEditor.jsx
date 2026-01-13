@@ -334,7 +334,8 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
   const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
   const isAdmin = user?.role === 'admin';
-  const canEdit = !report || (report.statut === 'brouillon') || isAdmin;
+  // Les employés peuvent éditer les brouillons et créer de nouveaux rapports
+  const canEdit = !report || report.statut === 'brouillon' || isAdmin;
 
   return (
     <div className="space-y-6">
@@ -382,7 +383,11 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input value={formData.operateur_nom} disabled />
+                <Input 
+                  value={formData.operateur_nom} 
+                  disabled 
+                  className="bg-slate-100"
+                />
               )}
             </div>
           </div>

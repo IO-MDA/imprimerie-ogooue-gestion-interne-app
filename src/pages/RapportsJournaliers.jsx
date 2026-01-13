@@ -388,7 +388,7 @@ export default function RapportsJournaliers() {
                       <Button variant="ghost" size="icon" onClick={() => setSelectedRapport(rapport)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      {(rapport.statut === 'brouillon' || isAdmin) && (
+                      {(rapport.statut === 'brouillon' || (rapport.statut === 'soumis' && isAdmin)) && (
                         <Button variant="ghost" size="icon" onClick={() => { setEditingDailyReport(rapport); setShowSpreadsheet(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>

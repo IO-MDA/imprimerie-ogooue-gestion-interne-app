@@ -131,7 +131,9 @@ export default function SpreadsheetGrid({ rows, onChange, readOnly = false }) {
                       onKeyDown={(e) => handleKeyDown(e, rowIndex, colIndex)}
                       onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                       disabled={readOnly}
-                      className="border-0 rounded-none h-9 text-sm focus:ring-2 focus:ring-blue-500 focus:z-10"
+                      className={`border-0 rounded-none h-9 text-sm focus:ring-2 focus:ring-blue-500 focus:z-10 ${
+                        readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                      }`}
                       placeholder={col.type === 'number' ? '0' : ''}
                     />
                   </td>
