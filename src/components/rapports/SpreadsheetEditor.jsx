@@ -334,7 +334,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
   const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
   const isAdmin = user?.role === 'admin';
-  const canEdit = !report || report.statut !== 'verrouille' || isAdmin;
+  const canEdit = !report || (report.statut === 'brouillon') || isAdmin;
 
   return (
     <div className="space-y-6">
