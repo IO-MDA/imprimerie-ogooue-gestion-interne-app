@@ -99,7 +99,7 @@ export default function Layout({ children, currentPageName }) {
               { name: 'Employés', href: 'Employes', icon: Users, roles: ['admin', 'manager'] },
               { name: 'Performance employés', href: 'PerformanceEmployes', icon: BarChart3, roles: ['admin', 'manager', 'user'] },
               { name: 'Pointage', href: 'Pointage', icon: Clock, roles: ['admin', 'manager', 'user'] },
-              { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'manager', 'user'] },
+              { name: 'Rapports journaliers', href: 'RapportsJournaliers', icon: ClipboardList, roles: ['admin', 'manager', 'user'], hideForClients: true },
               { name: 'Tâches', href: 'Taches', icon: FileCheck, roles: ['admin', 'manager', 'user'] },
               { name: 'Commandes', href: 'Commandes', icon: Package, roles: ['admin', 'manager', 'user'] },
               { name: 'Messagerie', href: 'Messagerie', icon: MessageSquare, badge: unreadMessages, roles: ['admin', 'manager', 'user'] },
