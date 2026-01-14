@@ -61,18 +61,31 @@ export default function RapportsJournaliers() {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [rapportsData, dailyReportsData, userData] = await Promise.all([
-      base44.entities.RapportJournalier.list('-date', 200),
-      base44.entities.DailyReport.list('-date', 200),
-      base44.auth.me()
-    ]);
-    setRapports(rapportsData);
-    setDailyReports(dailyReportsData);
-    setUser(userData);
-    setIsLoading(false);
+    try {
+      const userData = await base44.auth.me();
+      setUser(userData);
+
+      const isAdminOrManager = userData.role === 'admin' || userData.role === 'manager';
+
+      const [rapportsData, dailyReportsData] = await Promise.all([
+        base44.entities.RapportJournalier.list('-date', 200),
+        isAdminOrManager
+          ? base44.entities.DailyReport.list('-date', 200)
+          : base44.entities.DailyReport.filter({ operateur_id: userData.id }, '-date', 200)
+      ]);
+
+      setRapports(rapportsData);
+      setDailyReports(dailyReportsData);
+    } catch (e) {
+      console.error('Error loading data:', e);
+      toast.error('Erreur lors du chargement');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isAdmin = user?.role === 'admin';
+  const isEmployee = user?.role === 'user';
 
   const handleSave = async (data) => {
     // Check if report is empty (no data in any service)
@@ -261,7 +274,9 @@ export default function RapportsJournaliers() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Rapports journaliers</h1>
-          <p className="text-slate-500">Gérez les rapports quotidiens en mode tableur</p>
+          <p className="text-slate-500">
+            {isEmployee ? 'Saisissez votre rapport journalier en mode tableur' : 'Gérez les rapports quotidiens en mode tableur'}
+          </p>
         </div>
         <Button 
           onClick={() => { setEditingDailyReport(null); setShowSpreadsheet(true); }}
