@@ -657,7 +657,7 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                       {/* Image */}
                       {produit.photos && produit.photos.length > 0 ? (
                         <div 
-                          className="w-full aspect-[9/16] bg-white rounded-lg mb-3 p-2 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                          className="w-full h-48 bg-white rounded-lg mb-3 p-3 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                           onClick={() => setSelectedImage({ url: produit.photos[0], nom: produit.nom })}
                         >
                           <img 
@@ -667,7 +667,7 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                           />
                         </div>
                       ) : (
-                        <div className="w-full aspect-[9/16] bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
+                        <div className="w-full h-48 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
                           <ImageIcon className="w-8 h-8 text-slate-400" />
                         </div>
                       )}
