@@ -91,21 +91,22 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
     }
 
     setGeneratingImage(true);
+    toast.info('Génération de l\'image en cours... (5-10 secondes)');
+    
     try {
-      const prompt = `Générer une image produit professionnelle et commerciale pour :
-Produit: ${formData.nom}
-Description: ${formData.description_courte}
-Catégorie: ${formData.categorie}
-
-Style: Photo produit professionnelle sur fond blanc, éclairage studio, haute qualité, aspect marketing moderne.`;
+      const prompt = `Professional product photo of ${formData.nom}. ${formData.description_courte}. Category: ${formData.categorie || 'product'}. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic.`;
 
       const result = await base44.integrations.Core.GenerateImage({ prompt });
       
-      handleChange('photos', [...formData.photos, result.url]);
-      toast.success('Image générée avec succès!');
+      if (result && result.url) {
+        handleChange('photos', [...formData.photos, result.url]);
+        toast.success('Image générée avec succès!');
+      } else {
+        throw new Error('URL de l\'image non reçue');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de la génération de l\'image');
+      console.error('Erreur génération image:', e);
+      toast.error(`Erreur: ${e.message || 'Impossible de générer l\'image'}`);
     } finally {
       setGeneratingImage(false);
     }
