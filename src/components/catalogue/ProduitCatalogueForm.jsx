@@ -253,23 +253,22 @@ Style: Photo produit professionnelle sur fond blanc, éclairage studio, haute qu
           </div>
         </div>
 
-          {formData.photos.length > 0 && (
-            <div className="grid grid-cols-4 gap-2 mt-4">
-              {formData.photos.map((url, index) => (
-                <div key={index} className="relative group">
-                  <img src={url} alt="" className="w-full h-24 object-cover rounded-lg" />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {formData.photos.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            {formData.photos.map((url, index) => (
+              <div key={index} className="relative group">
+                <img src={url} alt="" className="w-full h-24 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(index)}
+                  className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Prix */}
