@@ -51,6 +51,7 @@ export default function Catalogue() {
   const [generatingCatalogue, setGeneratingCatalogue] = useState(false);
   const [showAnalyseIA, setShowAnalyseIA] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   
   const isAdmin = user?.role === 'admin';
   
@@ -655,13 +656,18 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                     <div className="flex-1">
                       {/* Image */}
                       {produit.photos && produit.photos.length > 0 ? (
-                        <img 
-                          src={produit.photos[0]} 
-                          alt={produit.nom}
-                          className="w-full h-32 object-contain bg-white rounded-lg mb-3 p-2"
-                        />
+                        <div 
+                          className="w-full aspect-[9/16] bg-white rounded-lg mb-3 p-2 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                          onClick={() => setSelectedImage({ url: produit.photos[0], nom: produit.nom })}
+                        >
+                          <img 
+                            src={produit.photos[0]} 
+                            alt={produit.nom}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                       ) : (
-                        <div className="w-full h-32 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
+                        <div className="w-full aspect-[9/16] bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
                           <ImageIcon className="w-8 h-8 text-slate-400" />
                         </div>
                       )}
@@ -786,6 +792,24 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
             <DialogTitle>Analyse IA des ventes</DialogTitle>
           </DialogHeader>
           <AnalyseVentesIA produits={produits} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedImage?.nom}</DialogTitle>
+          </DialogHeader>
+          {selectedImage && (
+            <div className="w-full aspect-[9/16] bg-white rounded-lg p-4">
+              <img 
+                src={selectedImage.url} 
+                alt={selectedImage.nom}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
