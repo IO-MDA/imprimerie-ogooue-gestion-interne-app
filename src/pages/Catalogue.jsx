@@ -158,11 +158,11 @@ export default function Catalogue() {
 
     try {
       for (const produit of produitssSansPhotos) {
-        toast.info(`Génération image: ${produit.nom}...`);
-
-        const prompt = `Professional product photo of ${produit.nom}. ${produit.description_courte}. Category: ${produit.categorie}. IMPORTANT: Remove all text from the image. If any text must appear, replace ALL text with the word "GABON" only. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic, no text or minimal text showing only GABON.`;
-
         try {
+          toast.info(`Génération image: ${produit.nom}...`);
+
+          const prompt = `Professional product photo: ${produit.nom}. Clean studio shot, white background, professional lighting. Replace any text with "GABON" only. No other text allowed.`;
+
           const result = await base44.integrations.Core.GenerateImage({ prompt });
           
           if (result && result.url) {
@@ -170,19 +170,25 @@ export default function Catalogue() {
               photos: [result.url]
             });
             generated++;
-            toast.success(`Image générée pour ${produit.nom}`);
+            toast.success(`✓ ${produit.nom}`);
+          } else {
+            toast.error(`Pas d'URL pour ${produit.nom}`);
           }
         } catch (e) {
-          console.error(`Erreur pour ${produit.nom}:`, e);
-          toast.error(`Échec: ${produit.nom}`);
+          console.error(`Erreur ${produit.nom}:`, e);
+          toast.error(`✗ ${produit.nom}: ${e.message || 'Erreur inconnue'}`);
         }
       }
 
-      toast.success(`${generated} images générées avec succès!`);
-      loadData();
+      if (generated > 0) {
+        toast.success(`${generated}/${produitssSansPhotos.length} images générées!`);
+        loadData();
+      } else {
+        toast.error('Aucune image générée');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de la génération des images');
+      console.error('Erreur générale:', e);
+      toast.error(`Erreur: ${e.message || 'Erreur inconnue'}`);
     } finally {
       setGeneratingImages(false);
     }
