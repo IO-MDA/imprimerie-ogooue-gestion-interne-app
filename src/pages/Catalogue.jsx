@@ -658,7 +658,7 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                         <img 
                           src={produit.photos[0]} 
                           alt={produit.nom}
-                          className="w-full h-32 object-cover rounded-lg mb-3"
+                          className="w-full h-32 object-contain bg-white rounded-lg mb-3 p-2"
                         />
                       ) : (
                         <div className="w-full h-32 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
