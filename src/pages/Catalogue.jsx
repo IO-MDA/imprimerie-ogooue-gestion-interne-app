@@ -160,7 +160,7 @@ export default function Catalogue() {
       for (const produit of produitssSansPhotos) {
         toast.info(`Génération image: ${produit.nom}...`);
 
-        const prompt = `Professional product photo of ${produit.nom}. ${produit.description_courte}. Category: ${produit.categorie}. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic.`;
+        const prompt = `Professional product photo of ${produit.nom}. ${produit.description_courte}. Category: ${produit.categorie}. IMPORTANT: Remove all text from the image. If any text must appear, replace ALL text with the word "GABON" only. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic, no text or minimal text showing only GABON.`;
 
         try {
           const result = await base44.integrations.Core.GenerateImage({ prompt });
