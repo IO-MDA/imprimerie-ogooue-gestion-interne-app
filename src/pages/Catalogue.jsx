@@ -50,6 +50,7 @@ export default function Catalogue() {
   const [user, setUser] = useState(null);
   const [generatingCatalogue, setGeneratingCatalogue] = useState(false);
   const [showAnalyseIA, setShowAnalyseIA] = useState(false);
+  const [generatingImages, setGeneratingImages] = useState(false);
   
   const isAdmin = user?.role === 'admin';
   
@@ -137,6 +138,53 @@ export default function Catalogue() {
 
   const clearSelection = () => {
     setSelectedProduits([]);
+  };
+
+  const genererImagesIA = async () => {
+    const produitssSansPhotos = produits.filter(p => !p.photos || p.photos.length === 0);
+    
+    if (produitssSansPhotos.length === 0) {
+      toast.info('Tous les produits ont déjà des photos');
+      return;
+    }
+
+    if (!confirm(`Générer des images IA pour ${produitssSansPhotos.length} produits sans photos?\n\nCela prendra environ ${produitssSansPhotos.length * 10} secondes.`)) {
+      return;
+    }
+
+    setGeneratingImages(true);
+    let generated = 0;
+
+    try {
+      for (const produit of produitssSansPhotos) {
+        toast.info(`Génération image: ${produit.nom}...`);
+
+        const prompt = `Professional product photo of ${produit.nom}. ${produit.description_courte}. Category: ${produit.categorie}. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic.`;
+
+        try {
+          const result = await base44.integrations.Core.GenerateImage({ prompt });
+          
+          if (result && result.url) {
+            await base44.entities.ProduitCatalogue.update(produit.id, {
+              photos: [result.url]
+            });
+            generated++;
+            toast.success(`Image générée pour ${produit.nom}`);
+          }
+        } catch (e) {
+          console.error(`Erreur pour ${produit.nom}:`, e);
+          toast.error(`Échec: ${produit.nom}`);
+        }
+      }
+
+      toast.success(`${generated} images générées avec succès!`);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération des images');
+    } finally {
+      setGeneratingImages(false);
+    }
   };
 
   const genererCatalogueIA = async () => {
@@ -330,24 +378,44 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <Button 
-              variant="outline"
-              onClick={genererCatalogueIA}
-              disabled={generatingCatalogue}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
-            >
-              {generatingCatalogue ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Génération IA...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Générer avec IA
-                </>
-              )}
-            </Button>
+            <>
+              <Button 
+                variant="outline"
+                onClick={genererImagesIA}
+                disabled={generatingImages}
+                className="bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:from-pink-700 hover:to-purple-700"
+              >
+                {generatingImages ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Images IA...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Générer images IA
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={genererCatalogueIA}
+                disabled={generatingCatalogue}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+              >
+                {generatingCatalogue ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Génération IA...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Générer produits IA
+                  </>
+                )}
+              </Button>
+            </>
           )}
           {isAdmin && (
             <Button onClick={() => { setEditingProduit(null); setShowForm(true); }}>
