@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Upload } from 'lucide-react';
+import { Plus, X, Upload, Sparkles, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
@@ -46,6 +46,7 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
   const [newOption, setNewOption] = useState('');
   const [newTag, setNewTag] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   useEffect(() => {
     if (produit) {
@@ -81,6 +82,33 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
     const newPhotos = [...formData.photos];
     newPhotos.splice(index, 1);
     handleChange('photos', newPhotos);
+  };
+
+  const genererImageIA = async () => {
+    if (!formData.nom || !formData.description_courte) {
+      toast.error('Veuillez remplir le nom et la description du produit d\'abord');
+      return;
+    }
+
+    setGeneratingImage(true);
+    try {
+      const prompt = `Générer une image produit professionnelle et commerciale pour :
+Produit: ${formData.nom}
+Description: ${formData.description_courte}
+Catégorie: ${formData.categorie}
+
+Style: Photo produit professionnelle sur fond blanc, éclairage studio, haute qualité, aspect marketing moderne.`;
+
+      const result = await base44.integrations.Core.GenerateImage({ prompt });
+      
+      handleChange('photos', [...formData.photos, result.url]);
+      toast.success('Image générée avec succès!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération de l\'image');
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const addOption = () => {
@@ -177,26 +205,53 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
       <div className="space-y-4">
         <h3 className="font-semibold text-slate-900">Photos</h3>
         
-        <div>
-          <Label>Photos du produit</Label>
-          <div className="mt-2">
-            <label className="cursor-pointer">
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
-                <Upload className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm text-slate-600">
-                  {uploading ? 'Téléchargement...' : 'Cliquer pour ajouter des photos'}
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-            </label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Ajouter une photo</Label>
+            <div className="mt-2">
+              <label className="cursor-pointer">
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-600">
+                    {uploading ? 'Téléchargement...' : 'Télécharger une photo'}
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
+            </div>
           </div>
+
+          <div>
+            <Label>Générer avec IA</Label>
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={genererImageIA}
+                disabled={generatingImage || !formData.nom || !formData.description_courte}
+                className="w-full border-2 border-dashed border-purple-300 rounded-lg p-4 text-center hover:border-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-br from-purple-50 to-indigo-50"
+              >
+                {generatingImage ? (
+                  <>
+                    <Loader2 className="w-6 h-6 text-purple-500 mx-auto mb-2 animate-spin" />
+                    <p className="text-sm text-purple-600">Génération...</p>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                    <p className="text-sm text-purple-600">Générer image IA</p>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
 
           {formData.photos.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mt-4">
