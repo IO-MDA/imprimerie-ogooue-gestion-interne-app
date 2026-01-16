@@ -334,9 +334,17 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
   const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
   const isAdmin = user?.role === 'admin';
-  // Les employés peuvent éditer les brouillons et créer de nouveaux rapports
-  // Les admins peuvent éditer tous les rapports sauf ceux verrouillés
-  const canEdit = !report || report.statut === 'brouillon' || (isAdmin && report.statut !== 'verrouille');
+  const isManager = user?.role === 'manager';
+  
+  // Logique d'édition :
+  // - Tout le monde peut créer un nouveau rapport
+  // - Les employés peuvent éditer leurs brouillons uniquement
+  // - Les managers peuvent éditer les brouillons et les soumis
+  // - Les admins peuvent tout éditer sauf les verrouillés
+  const canEdit = !report || 
+                  report.statut === 'brouillon' || 
+                  (isManager && report.statut === 'soumis') ||
+                  (isAdmin && report.statut !== 'verrouille');
 
   return (
     <div className="space-y-6">
