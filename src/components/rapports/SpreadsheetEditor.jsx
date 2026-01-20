@@ -79,6 +79,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: report.cash_caisse || ''
         });
       } else {
+        // Nouveau rapport - utiliser l'utilisateur connecté comme opérateur
         setFormData({
           date: moment().format('YYYY-MM-DD'),
           operateur_id: userData.id,
@@ -341,10 +342,10 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
   // - Les employés peuvent éditer leurs brouillons uniquement
   // - Les managers peuvent éditer les brouillons et les soumis
   // - Les admins peuvent tout éditer sauf les verrouillés
-  const isOwnReport = report?.operateur_id === user?.id;
+  const isOwnReport = !report || report.operateur_id === user?.id;
   const canEdit = !report || 
-                  (report.statut === 'brouillon' && (isOwnReport || isAdmin || isManager)) || 
-                  (isManager && report.statut === 'soumis') ||
+                  (report.statut === 'brouillon' && isOwnReport) || 
+                  (isManager && (report.statut === 'brouillon' || report.statut === 'soumis')) ||
                   (isAdmin && report.statut !== 'verrouille');
 
   return (
