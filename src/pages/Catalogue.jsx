@@ -383,9 +383,16 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
           <h1 className="text-2xl font-bold text-slate-900">Catalogue Produits</h1>
           <p className="text-slate-500">Gérez vos produits et générez des catalogues PDF</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {isAdmin && (
             <>
+              <Button 
+                onClick={() => { setEditingProduit(null); setShowForm(true); }}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouveau produit
+              </Button>
               <Button 
                 variant="outline"
                 onClick={genererImagesIA}
@@ -423,12 +430,6 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                 )}
               </Button>
             </>
-          )}
-          {isAdmin && (
-            <Button onClick={() => { setEditingProduit(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nouveau produit
-            </Button>
           )}
           <Button 
             variant="outline"
