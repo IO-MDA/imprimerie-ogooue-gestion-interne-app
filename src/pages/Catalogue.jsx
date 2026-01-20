@@ -664,14 +664,20 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
                       {/* Image */}
                       {produit.photos && produit.photos.length > 0 ? (
                         <div 
-                          className="w-full h-48 bg-white rounded-lg mb-3 p-3 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                          onClick={() => setSelectedImage({ url: produit.photos[0], nom: produit.nom })}
+                          className="relative w-full h-48 bg-white rounded-lg mb-3 p-3 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all group"
+                          onClick={() => setSelectedImage({ photos: produit.photos, nom: produit.nom, currentIndex: 0 })}
                         >
                           <img 
                             src={produit.photos[0]} 
                             alt={produit.nom}
                             className="w-full h-full object-contain"
                           />
+                          {produit.photos.length > 1 && (
+                            <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3" />
+                              {produit.photos.length}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="w-full h-48 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
@@ -802,19 +808,80 @@ Réponds uniquement avec la description, sans guillemets ni préambule.`;
         </DialogContent>
       </Dialog>
 
-      {/* Image Preview Dialog */}
+      {/* Image Gallery Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{selectedImage?.nom}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedImage?.nom}</span>
+              {selectedImage && selectedImage.photos.length > 1 && (
+                <Badge className="bg-blue-100 text-blue-700">
+                  {(selectedImage.currentIndex || 0) + 1} / {selectedImage.photos.length}
+                </Badge>
+              )}
+            </DialogTitle>
           </DialogHeader>
           {selectedImage && (
-            <div className="w-full aspect-[9/16] bg-white rounded-lg p-4">
-              <img 
-                src={selectedImage.url} 
-                alt={selectedImage.nom}
-                className="w-full h-full object-contain"
-              />
+            <div className="space-y-4">
+              {/* Main Image */}
+              <div className="w-full h-96 bg-white rounded-lg p-4 flex items-center justify-center">
+                <img 
+                  src={selectedImage.photos[selectedImage.currentIndex || 0]} 
+                  alt={selectedImage.nom}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+
+              {/* Thumbnails Navigation */}
+              {selectedImage.photos.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  {selectedImage.photos.map((photo, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage({ ...selectedImage, currentIndex: index })}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                        index === (selectedImage.currentIndex || 0)
+                          ? 'border-blue-500 ring-2 ring-blue-200'
+                          : 'border-slate-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <img 
+                        src={photo} 
+                        alt={`${selectedImage.nom} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Navigation Buttons for Mobile */}
+              {selectedImage.photos.length > 1 && (
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={(selectedImage.currentIndex || 0) === 0}
+                    onClick={() => setSelectedImage({ 
+                      ...selectedImage, 
+                      currentIndex: (selectedImage.currentIndex || 0) - 1 
+                    })}
+                  >
+                    Précédent
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={(selectedImage.currentIndex || 0) === selectedImage.photos.length - 1}
+                    onClick={() => setSelectedImage({ 
+                      ...selectedImage, 
+                      currentIndex: (selectedImage.currentIndex || 0) + 1 
+                    })}
+                  >
+                    Suivant
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
