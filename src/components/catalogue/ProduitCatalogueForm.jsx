@@ -94,7 +94,7 @@ export default function ProduitCatalogueForm({ produit, onSave, onCancel }) {
     toast.info('Génération de l\'image en cours... (5-10 secondes)');
     
     try {
-      const prompt = `Professional product photo of ${formData.nom}. ${formData.description_courte}. Category: ${formData.categorie || 'product'}. Style: Clean studio photography, white background, professional lighting, commercial quality, modern marketing aesthetic.`;
+      const prompt = `Professional product photo: ${formData.nom}. Clean studio shot, white background, professional lighting. Replace any text with "GABON" only. No other text allowed.`;
 
       const result = await base44.integrations.Core.GenerateImage({ prompt });
       
