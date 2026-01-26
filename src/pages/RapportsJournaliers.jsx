@@ -65,13 +65,10 @@ export default function RapportsJournaliers() {
       const userData = await base44.auth.me();
       setUser(userData);
 
-      const isAdminOrManager = userData.role === 'admin' || userData.role === 'manager';
-
+      // Tous les employés voient tous les rapports
       const [rapportsData, dailyReportsData] = await Promise.all([
         base44.entities.RapportJournalier.list('-date', 200),
-        isAdminOrManager
-          ? base44.entities.DailyReport.list('-date', 200)
-          : base44.entities.DailyReport.filter({ operateur_id: userData.id }, '-date', 200)
+        base44.entities.DailyReport.list('-date', 200)
       ]);
 
       setRapports(rapportsData);
@@ -403,7 +400,7 @@ export default function RapportsJournaliers() {
                       <Button variant="ghost" size="icon" onClick={() => setSelectedRapport(rapport)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      {(rapport.statut === 'brouillon' || (rapport.statut === 'soumis' && isAdmin)) && (
+                      {rapport.statut === 'brouillon' && (
                         <Button variant="ghost" size="icon" onClick={() => { setEditingDailyReport(rapport); setShowSpreadsheet(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>

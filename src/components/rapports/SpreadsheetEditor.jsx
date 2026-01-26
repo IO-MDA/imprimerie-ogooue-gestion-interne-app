@@ -339,13 +339,11 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
   
   // Logique d'édition :
   // - Tout le monde peut créer un nouveau rapport
-  // - Les employés peuvent éditer leurs brouillons uniquement
-  // - Les managers peuvent éditer les brouillons et les soumis
+  // - Tous les employés peuvent éditer les brouillons (pas seulement le leur)
+  // - Seuls les rapports soumis ou verrouillés ne peuvent pas être édités par les employés
   // - Les admins peuvent tout éditer sauf les verrouillés
-  const isOwnReport = !report || report.operateur_id === user?.id;
   const canEdit = !report || 
-                  (report.statut === 'brouillon' && isOwnReport) || 
-                  (isManager && (report.statut === 'brouillon' || report.statut === 'soumis')) ||
+                  (report.statut === 'brouillon') || 
                   (isAdmin && report.statut !== 'verrouille');
 
   return (
