@@ -92,3 +92,50 @@ export const truncateText = (pdf, text, maxWidth, fontSize) => {
   const lines = pdf.splitTextToSize(text, maxWidth);
   return lines;
 };
+
+/**
+ * Convertit un nombre en lettres (français - FCFA)
+ */
+export const nombreEnLettres = (nombre) => {
+  const unites = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
+  const dizaines = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
+  const dix = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+  
+  if (nombre === 0) return 'zéro';
+  
+  const convertirMoins1000 = (n) => {
+    if (n === 0) return '';
+    if (n < 10) return unites[n];
+    if (n < 20) return dix[n - 10];
+    if (n < 100) {
+      const d = Math.floor(n / 10);
+      const u = n % 10;
+      if (d === 7 || d === 9) {
+        return dizaines[d] + (u === 0 ? (d === 9 ? 's' : '-dix') : '-' + (d === 7 && u === 1 ? 'et-onze' : (u < 10 ? dix[u] : '')));
+      }
+      return dizaines[d] + (u === 1 && d !== 8 ? ' et un' : (u > 0 ? '-' + unites[u] : ''));
+    }
+    const c = Math.floor(n / 100);
+    const reste = n % 100;
+    return (c === 1 ? 'cent' : unites[c] + ' cent' + (c > 1 && reste === 0 ? 's' : '')) + (reste > 0 ? ' ' + convertirMoins1000(reste) : '');
+  };
+  
+  const convertirPartie = (n) => {
+    if (n === 0) return '';
+    const milliards = Math.floor(n / 1000000000);
+    const millions = Math.floor((n % 1000000000) / 1000000);
+    const milliers = Math.floor((n % 1000000) / 1000);
+    const reste = n % 1000;
+    
+    let resultat = '';
+    if (milliards > 0) resultat += convertirMoins1000(milliards) + ' milliard' + (milliards > 1 ? 's' : '') + ' ';
+    if (millions > 0) resultat += convertirMoins1000(millions) + ' million' + (millions > 1 ? 's' : '') + ' ';
+    if (milliers > 0) resultat += (milliers === 1 ? 'mille' : convertirMoins1000(milliers) + ' mille') + ' ';
+    if (reste > 0) resultat += convertirMoins1000(reste);
+    
+    return resultat.trim();
+  };
+  
+  const partieEntiere = Math.floor(nombre);
+  return convertirPartie(partieEntiere) + ' francs CFA';
+};

@@ -28,6 +28,7 @@ import {
 import jsPDF from 'jspdf';
 import DocumentForm from '@/components/documents/DocumentForm';
 import ChangerStatutDialog from '@/components/commandes/ChangerStatutDialog';
+import { nombreEnLettres } from '@/components/utils/pdfHelpers';
 import moment from 'moment';
 import { toast } from 'sonner';
 
@@ -126,24 +127,26 @@ export default function DevisFactures() {
   const downloadPDF = (doc, type) => {
     const pdf = new jsPDF();
     
-    // Header
+    // Header avec logo
     pdf.setFillColor(37, 99, 235);
     pdf.rect(0, 0, 210, 40, 'F');
     
-    // Add logo
-    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/c22c6636f_LOGO-BON-FINAL1.png';
+    // Logo à gauche
+    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6952719092a5c4248c27c512/e66e417ff_LOGO-BON-FINAL1.png';
     try {
-      pdf.addImage(logoUrl, 'PNG', 165, 5, 30, 30);
+      const img = new Image();
+      img.src = logoUrl;
+      pdf.addImage(img, 'PNG', 15, 5, 30, 30);
     } catch (e) {
       console.log('Logo non chargé');
     }
     
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(24);
-    pdf.text('Imprimerie OGOOUE', 20, 20);
+    pdf.text('Imprimerie OGOOUE', 50, 20);
     pdf.setFontSize(10);
-    pdf.text('Moanda, Gabon', 20, 28);
-    pdf.text('Carrefour Fina en face de FINAM', 20, 34);
+    pdf.text('Moanda, Gabon', 50, 28);
+    pdf.text('Carrefour Fina en face de FINAM', 50, 34);
     
     // Document type and number
     pdf.setTextColor(0, 0, 0);
@@ -217,6 +220,14 @@ export default function DevisFactures() {
     pdf.setFont(undefined, 'bold');
     pdf.text('TOTAL:', 130, y);
     pdf.text(total + ' FCFA', 165, y);
+    
+    // Montant en lettres
+    y += 12;
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'italic');
+    pdf.setTextColor(100, 100, 100);
+    const montantEnLettres = nombreEnLettres(doc.total || 0);
+    pdf.text('Arrêté à : ' + montantEnLettres, 20, y, { maxWidth: 170 });
     
     // Notes
     if (doc.notes) {
