@@ -357,16 +357,15 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
   const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
   const isAdmin = user?.role === 'admin';
-  const isManager = user?.role === 'manager';
   
   // Logique d'édition :
-  // - Tout le monde peut créer un nouveau rapport
-  // - Tous les employés peuvent éditer les brouillons (pas seulement le leur)
-  // - Seuls les rapports soumis ou verrouillés ne peuvent pas être édités par les employés
-  // - Les admins peuvent tout éditer sauf les verrouillés
+  // - Nouveau rapport -> toujours éditable
+  // - Rapport brouillon -> éditable par tous
+  // - Rapport soumis -> éditable uniquement par admin
+  // - Rapport verrouillé -> jamais éditable
   const canEdit = !report || 
-                  (report.statut === 'brouillon') || 
-                  (isAdmin && report.statut !== 'verrouille');
+                  report.statut === 'brouillon' || 
+                  (isAdmin && report.statut === 'soumis');
 
   return (
     <div className="space-y-6">
@@ -427,11 +426,17 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
         </CardContent>
       </Card>
 
-      <SpreadsheetGrid 
-        rows={rows} 
-        onChange={handleRowsChange}
-        readOnly={!canEdit}
-      />
+      {rows.length > 0 ? (
+        <SpreadsheetGrid 
+          rows={rows} 
+          onChange={handleRowsChange}
+          readOnly={!canEdit}
+        />
+      ) : (
+        <div className="text-center py-8 text-slate-500">
+          Chargement...
+        </div>
+      )}
 
       <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-slate-100">
         <CardContent className="p-6">
