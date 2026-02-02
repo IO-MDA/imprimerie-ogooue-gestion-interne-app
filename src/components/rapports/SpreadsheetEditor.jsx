@@ -367,37 +367,29 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
             </div>
             <div>
               <Label>Opérateur *</Label>
-              {isAdmin ? (
-                <Select 
-                  value={formData.operateur_id} 
-                  onValueChange={(v) => {
-                    const selectedUser = users.find(u => u.id === v);
-                    setFormData({ 
-                      ...formData, 
-                      operateur_id: v,
-                      operateur_nom: selectedUser?.full_name || selectedUser?.email || ''
-                    });
-                  }}
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map(u => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.full_name || u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input 
-                  value={formData.operateur_nom} 
-                  disabled 
-                  className="bg-slate-100"
-                />
-              )}
+              <Select 
+                value={formData.operateur_id} 
+                onValueChange={(v) => {
+                  const selectedUser = users.find(u => u.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    operateur_id: v,
+                    operateur_nom: selectedUser?.full_name || selectedUser?.email || ''
+                  });
+                }}
+                disabled={!canEdit}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
