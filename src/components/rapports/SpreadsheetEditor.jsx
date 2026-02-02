@@ -79,7 +79,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: report.cash_caisse || ''
         });
       } else {
-        // Nouveau rapport - utiliser l'utilisateur connecté comme opérateur
+        // Nouveau rapport - utiliser l'utilisateur connecté comme opérateur par défaut
         setFormData({
           date: moment().format('YYYY-MM-DD'),
           operateur_id: userData.id,
@@ -87,6 +87,15 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: ''
         });
         initializeEmptyRows();
+      }
+      
+      // Pour les rapports existants sans opérateur, utiliser l'utilisateur connecté
+      if (report && !formData.operateur_id) {
+        setFormData(prev => ({
+          ...prev,
+          operateur_id: userData.id,
+          operateur_nom: userData.full_name || userData.email
+        }));
       }
     } catch (e) {
       toast.error('Erreur de chargement');
@@ -118,25 +127,22 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
     const totalSorties = rows.reduce((sum, row) => sum + (row.sorties || 0), 0);
     const caisseJournee = totalEntrees - totalSorties;
-    
-    const cashCaisse = parseFloat(formData.cash_caisse) || 0;
-    const ecart = cashCaisse > 0 ? cashCaisse - caisseJournee : null;
 
-    return { totalEntrees, totalSorties, caisseJournee, ecart };
+    return { totalEntrees, totalSorties, caisseJournee };
   };
 
   const autoSave = async () => {
     if (!report?.id || report?.statut !== 'brouillon') return;
 
     try {
-      const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
+      const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
       
       await base44.entities.DailyReport.update(report.id, {
-        cash_caisse: parseFloat(formData.cash_caisse) || null,
+        cash_caisse: caisseJournee,
         total_entrees: totalEntrees,
         total_sorties: totalSorties,
         caisse_journee: caisseJournee,
-        ecart: ecart
+        ecart: 0
       });
 
       for (let i = 0; i < rows.length; i++) {
@@ -169,7 +175,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
     setIsSaving(true);
     try {
-      const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
+      const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
 
       let reportId = report?.id;
 
@@ -179,11 +185,11 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           operateur_id: formData.operateur_id,
           operateur_nom: formData.operateur_nom,
           statut: 'brouillon',
-          cash_caisse: parseFloat(formData.cash_caisse) || null,
+          cash_caisse: caisseJournee,
           total_entrees: totalEntrees,
           total_sorties: totalSorties,
           caisse_journee: caisseJournee,
-          ecart: ecart
+          ecart: 0
         });
         reportId = newReport.id;
       } else {
@@ -191,11 +197,11 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           date: formData.date,
           operateur_id: formData.operateur_id,
           operateur_nom: formData.operateur_nom,
-          cash_caisse: parseFloat(formData.cash_caisse) || null,
+          cash_caisse: caisseJournee,
           total_entrees: totalEntrees,
           total_sorties: totalSorties,
           caisse_journee: caisseJournee,
-          ecart: ecart
+          ecart: 0
         });
       }
 
@@ -247,7 +253,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
 
     setIsSaving(true);
     try {
-      const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
+      const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
 
       let reportId = report?.id;
 
@@ -257,21 +263,21 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           operateur_id: formData.operateur_id,
           operateur_nom: formData.operateur_nom,
           statut: 'soumis',
-          cash_caisse: parseFloat(formData.cash_caisse) || null,
+          cash_caisse: caisseJournee,
           total_entrees: totalEntrees,
           total_sorties: totalSorties,
           caisse_journee: caisseJournee,
-          ecart: ecart
+          ecart: 0
         });
         reportId = newReport.id;
       } else {
         await base44.entities.DailyReport.update(reportId, {
           statut: 'soumis',
-          cash_caisse: parseFloat(formData.cash_caisse) || null,
+          cash_caisse: caisseJournee,
           total_entrees: totalEntrees,
           total_sorties: totalSorties,
           caisse_journee: caisseJournee,
-          ecart: ecart
+          ecart: 0
         });
       }
 
@@ -333,7 +339,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
     }
   };
 
-  const { totalEntrees, totalSorties, caisseJournee, ecart } = calculateTotals();
+  const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'manager';
   
@@ -393,31 +399,14 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
-            <div>
-              <Label className="text-xs text-slate-500">CAISSE JOURNÉE (calculé)</Label>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatMontant(caisseJournee)} F
-              </p>
-            </div>
-            <div>
-              <Label className="text-xs">CASH CAISSE (saisie manuelle)</Label>
-              <Input
-                type="number"
-                value={formData.cash_caisse}
-                onChange={(e) => setFormData({ ...formData, cash_caisse: e.target.value })}
-                placeholder="Montant réel en caisse"
-                disabled={!canEdit}
-              />
-            </div>
-            {formData.cash_caisse && (
-              <div>
-                <Label className="text-xs text-slate-500">ÉCART</Label>
-                <p className={`text-2xl font-bold ${ecart >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {ecart !== null ? `${formatMontant(ecart)} F` : '-'}
-                </p>
-              </div>
-            )}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+            <Label className="text-sm font-semibold text-slate-700 mb-2 block">TOTAL CAISSE (Calculé automatiquement)</Label>
+            <p className="text-4xl font-bold text-blue-600">
+              {formatMontant(caisseJournee)} FCFA
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Recettes totales - Dépenses totales
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -441,17 +430,9 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
               <p className="text-2xl font-bold text-red-600">{formatMontant(totalSorties)} F</p>
             </div>
             <div className="text-center p-4 bg-white rounded-lg">
-              <p className="text-sm text-slate-500">Bénéfice net</p>
+              <p className="text-sm text-slate-500">Total Caisse</p>
               <p className="text-2xl font-bold text-blue-600">{formatMontant(caisseJournee)} F</p>
             </div>
-            {formData.cash_caisse && ecart !== null && (
-              <div className="text-center p-4 bg-white rounded-lg">
-                <p className="text-sm text-slate-500">Écart caisse</p>
-                <p className={`text-2xl font-bold ${ecart >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {formatMontant(ecart)} F
-                </p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
