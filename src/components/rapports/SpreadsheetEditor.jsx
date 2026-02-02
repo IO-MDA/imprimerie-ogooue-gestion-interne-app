@@ -12,6 +12,7 @@ import SpreadsheetGrid from './SpreadsheetGrid';
 import { formatMontant } from '@/components/utils/formatMontant.jsx';
 
 const INITIAL_ROWS_COUNT = 30;
+const MIN_ROWS = 30;
 
 export default function SpreadsheetEditor({ report, onClose, onSave }) {
   const [user, setUser] = useState(null);
@@ -54,23 +55,37 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
         const rowsData = await base44.entities.DailyReportRow.filter({ report_id: report.id });
         const sortedRows = rowsData.sort((a, b) => a.row_index - b.row_index);
         
-        if (sortedRows.length > 0) {
-          setRows(sortedRows.map(r => ({
-            id: r.id,
-            copies: r.copies || 0,
-            marchandises: r.marchandises || 0,
-            scan: r.scan || 0,
-            tirage_saisies: r.tirage_saisies || 0,
-            badges_plastification: r.badges_plastification || 0,
-            demi_photos: r.demi_photos || 0,
-            maintenance: r.maintenance || 0,
-            imprimerie: r.imprimerie || 0,
-            sorties: r.sorties || 0,
-            description: r.description || ''
-          })));
-        } else {
-          initializeEmptyRows();
+        let mappedRows = sortedRows.map(r => ({
+          id: r.id,
+          copies: r.copies || 0,
+          marchandises: r.marchandises || 0,
+          scan: r.scan || 0,
+          tirage_saisies: r.tirage_saisies || 0,
+          badges_plastification: r.badges_plastification || 0,
+          demi_photos: r.demi_photos || 0,
+          maintenance: r.maintenance || 0,
+          imprimerie: r.imprimerie || 0,
+          sorties: r.sorties || 0,
+          description: r.description || ''
+        }));
+        
+        // S'assurer d'avoir toujours au moins MIN_ROWS lignes
+        while (mappedRows.length < MIN_ROWS) {
+          mappedRows.push({
+            copies: 0,
+            marchandises: 0,
+            scan: 0,
+            tirage_saisies: 0,
+            badges_plastification: 0,
+            demi_photos: 0,
+            maintenance: 0,
+            imprimerie: 0,
+            sorties: 0,
+            description: ''
+          });
         }
+        
+        setRows(mappedRows);
 
         setFormData({
           date: report.date,
@@ -322,9 +337,9 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
   };
 
   const handleRowsChange = (newRows) => {
-    setRows(newRows);
-    if (newRows.length > 0 && newRows[newRows.length - 1].copies !== 0) {
-      setRows([...newRows, {
+    // S'assurer qu'on a toujours au moins MIN_ROWS lignes
+    while (newRows.length < MIN_ROWS) {
+      newRows.push({
         copies: 0,
         marchandises: 0,
         scan: 0,
@@ -335,8 +350,9 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
         imprimerie: 0,
         sorties: 0,
         description: ''
-      }]);
+      });
     }
+    setRows(newRows);
   };
 
   const { totalEntrees, totalSorties, caisseJournee } = calculateTotals();
