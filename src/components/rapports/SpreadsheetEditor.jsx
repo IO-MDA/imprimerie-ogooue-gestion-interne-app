@@ -23,9 +23,22 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
     operateur_nom: report?.operateur_nom || '',
     cash_caisse: report?.cash_caisse || ''
   });
-  const [rows, setRows] = useState([]);
+  // Initialiser rows avec un tableau vide pour éviter les problèmes de chargement
+  const [rows, setRows] = useState(Array.from({ length: INITIAL_ROWS_COUNT }, () => ({
+    copies: 0,
+    marchandises: 0,
+    scan: 0,
+    tirage_saisies: 0,
+    badges_plastification: 0,
+    demi_photos: 0,
+    maintenance: 0,
+    imprimerie: 0,
+    sorties: 0,
+    description: ''
+  })));
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -44,6 +57,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
   }, [rows, formData.cash_caisse]);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
       const userData = await base44.auth.me();
       setUser(userData);
@@ -103,24 +117,13 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: ''
         });
         
-        // Initialiser immédiatement les lignes vides
-        const emptyRows = Array.from({ length: INITIAL_ROWS_COUNT }, () => ({
-          copies: 0,
-          marchandises: 0,
-          scan: 0,
-          tirage_saisies: 0,
-          badges_plastification: 0,
-          demi_photos: 0,
-          maintenance: 0,
-          imprimerie: 0,
-          sorties: 0,
-          description: ''
-        }));
-        setRows(emptyRows);
+        // Les rows sont déjà initialisés dans le useState initial
       }
     } catch (e) {
       toast.error('Erreur de chargement');
       console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -433,16 +436,16 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
         </CardContent>
       </Card>
 
-      {rows.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-slate-500">
+          Chargement...
+        </div>
+      ) : (
         <SpreadsheetGrid 
           rows={rows} 
           onChange={handleRowsChange}
           readOnly={!canEdit}
         />
-      ) : (
-        <div className="text-center py-8 text-slate-500">
-          Chargement...
-        </div>
       )}
 
       <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-slate-100">
