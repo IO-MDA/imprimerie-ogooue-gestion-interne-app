@@ -67,9 +67,9 @@ export default function Evenements() {
       const defaultEvents = [
         // Fêtes nationales du Gabon
         { nom: "Nouvel An", date_debut: `${currentYear}-01-01`, type: "fete_nationale", description: "Célébration du Nouvel An", opportunite_pub: "Cartes de vœux, calendriers, flyers promotionnels", recurrent_annuel: true },
-        { nom: "Fête de la Rénovation", date_debut: `${currentYear}-03-12`, type: "fete_nationale", description: "Commémoration du 12 mars 1968", opportunite_pub: "Affiches commémoratives, programmes officiels", recurrent_annuel: true },
         { nom: "Fête du Travail", date_debut: `${currentYear}-05-01`, type: "fete_nationale", description: "Journée internationale des travailleurs", opportunite_pub: "Affiches syndicales, bannières événementielles", recurrent_annuel: true },
         { nom: "Fête de l'Indépendance", date_debut: `${currentYear}-08-17`, type: "fete_nationale", description: "Indépendance du Gabon (17 août 1960)", opportunite_pub: "Drapeaux gabonais, affiches patriotiques, programmes événementiels, t-shirts aux couleurs nationales", recurrent_annuel: true },
+        { nom: "Fête de la Rénovation", date_debut: `${currentYear}-03-12`, type: "fete_nationale", description: "Commémoration du 12 mars 1968", opportunite_pub: "Affiches commémoratives, programmes officiels", recurrent_annuel: true },
         
         // Fêtes religieuses
         { nom: "Noël", date_debut: `${currentYear}-12-25`, type: "fete_religieuse", description: "Fête de Noël", opportunite_pub: "Cartes de vœux, calendriers de l'Avent, menus de fête", recurrent_annuel: true },
@@ -84,18 +84,11 @@ export default function Evenements() {
         // Rentrée scolaire
         { nom: "Rentrée Scolaire", date_debut: `${currentYear}-09-15`, type: "rentree_scolaire", description: "Début de l'année scolaire", opportunite_pub: "Fournitures scolaires, cahiers personnalisés, listes de classe, étiquettes nominatives", recurrent_annuel: true },
         
-        // Événements commerciaux et internationaux
+        // Événements commerciaux
         { nom: "Saint-Valentin", date_debut: `${currentYear}-02-14`, type: "commercial", description: "Fête des amoureux", opportunite_pub: "Cartes romantiques, bons cadeaux, packaging spécial", recurrent_annuel: true },
-        { nom: "Journée Internationale de la Femme", date_debut: `${currentYear}-03-08`, type: "commercial", description: "Célébration des femmes", opportunite_pub: "Cartes, affiches, campagnes de communication", recurrent_annuel: true },
-        { nom: "Journée Mondiale de l'Eau", date_debut: `${currentYear}-03-22`, type: "commercial", description: "Sensibilisation à l'eau", opportunite_pub: "Affiches de sensibilisation, brochures éducatives", recurrent_annuel: true },
-        { nom: "Journée de la Terre", date_debut: `${currentYear}-04-22`, type: "commercial", description: "Journée mondiale de l'environnement", opportunite_pub: "Flyers écologiques, affiches de sensibilisation", recurrent_annuel: true },
         { nom: "Fête des Mères", date_debut: `${currentYear}-05-26`, type: "commercial", description: "Fête des Mères", opportunite_pub: "Cartes personnalisées, albums photo, certificats", recurrent_annuel: true },
-        { nom: "Journée Mondiale de l'Enfance", date_debut: `${currentYear}-06-01`, type: "commercial", description: "Célébration des enfants", opportunite_pub: "Coloriages, cahiers de jeux, certificats", recurrent_annuel: true },
         { nom: "Fête des Pères", date_debut: `${currentYear}-06-15`, type: "commercial", description: "Fête des Pères", opportunite_pub: "Cartes personnalisées, certificats", recurrent_annuel: true },
-        { nom: "Journée de l'Afrique", date_debut: `${currentYear}-05-25`, type: "commercial", description: "Célébration de l'Union Africaine", opportunite_pub: "Affiches panafricaines, drapeaux", recurrent_annuel: true },
-        { nom: "Halloween", date_debut: `${currentYear}-10-31`, type: "commercial", description: "Fête d'Halloween", opportunite_pub: "Décorations, invitations de fêtes, affiches", recurrent_annuel: true },
-        { nom: "Black Friday", date_debut: `${currentYear}-11-29`, type: "commercial", description: "Journée de promotions", opportunite_pub: "Flyers promotionnels, catalogues, affiches publicitaires", recurrent_annuel: true },
-        { nom: "Cyber Monday", date_debut: `${currentYear}-12-02`, type: "commercial", description: "Promotions en ligne", opportunite_pub: "Bannières web, flyers digitaux", recurrent_annuel: true }
+        { nom: "Black Friday", date_debut: `${currentYear}-11-29`, type: "commercial", description: "Journée de promotions", opportunite_pub: "Flyers promotionnels, catalogues, affiches publicitaires", recurrent_annuel: true }
       ];
       
       for (const event of defaultEvents) {

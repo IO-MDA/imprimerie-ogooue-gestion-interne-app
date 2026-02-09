@@ -95,11 +95,11 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: report.cash_caisse || ''
         });
       } else {
-        // Nouveau rapport - utiliser "Imprimerie OGOOUÉ" comme opérateur
+        // Nouveau rapport - initialiser avec l'utilisateur connecté
         setFormData({
           date: moment().format('YYYY-MM-DD'),
-          operateur_id: 'imprimerie_ogooue',
-          operateur_nom: 'Imprimerie OGOOUÉ',
+          operateur_id: userData.id,
+          operateur_nom: userData.full_name || userData.email,
           cash_caisse: ''
         });
         
@@ -395,11 +395,29 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
             </div>
             <div>
               <Label>Opérateur *</Label>
-              <Input
-                value={formData.operateur_nom}
-                disabled
-                className="bg-slate-100 font-medium"
-              />
+              <Select 
+                value={formData.operateur_id} 
+                onValueChange={(v) => {
+                  const selectedUser = users.find(u => u.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    operateur_id: v,
+                    operateur_nom: selectedUser?.full_name || selectedUser?.email || ''
+                  });
+                }}
+                disabled={!canEdit}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

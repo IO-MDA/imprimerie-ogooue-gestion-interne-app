@@ -12,12 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function DocumentForm({ type, document, onSave, onCancel }) {
   const isDevis = type === 'devis';
   const [clients, setClients] = useState([]);
-  const [produits, setProduits] = useState([]);
   const [showClientSearch, setShowClientSearch] = useState(false);
-  const [showProductSearch, setShowProductSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [selectedLineIndex, setSelectedLineIndex] = useState(null);
   
   const [formData, setFormData] = useState({
     client_id: document?.client_id || '',
@@ -39,17 +35,11 @@ export default function DocumentForm({ type, document, onSave, onCancel }) {
 
   useEffect(() => {
     loadClients();
-    loadProduits();
   }, []);
 
   const loadClients = async () => {
     const data = await base44.entities.Client.list();
     setClients(data);
-  };
-
-  const loadProduits = async () => {
-    const data = await base44.entities.ProduitCatalogue.list();
-    setProduits(data);
   };
 
   const selectClient = (client) => {
@@ -74,19 +64,6 @@ export default function DocumentForm({ type, document, onSave, onCancel }) {
       updated[index].total = updated[index].quantite * updated[index].prix_unitaire;
     }
     setFormData(prev => ({ ...prev, lignes: updated }));
-  };
-
-  const selectProduct = (product) => {
-    const updated = [...formData.lignes];
-    updated[selectedLineIndex] = {
-      ...updated[selectedLineIndex],
-      description: product.nom,
-      prix_unitaire: product.prix || 0,
-      total: updated[selectedLineIndex].quantite * (product.prix || 0)
-    };
-    setFormData(prev => ({ ...prev, lignes: updated }));
-    setShowProductSearch(false);
-    setSelectedLineIndex(null);
   };
 
   const addLine = () => {
@@ -129,11 +106,6 @@ export default function DocumentForm({ type, document, onSave, onCancel }) {
   const filteredClients = clients.filter(c => 
     c.nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredProduits = produits.filter(p => 
-    p.nom?.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
-    p.categorie?.toLowerCase().includes(productSearchQuery.toLowerCase())
   );
 
   return (
@@ -276,24 +248,12 @@ export default function DocumentForm({ type, document, onSave, onCancel }) {
           </div>
           {formData.lignes.map((line, index) => (
             <div key={index} className="grid grid-cols-12 gap-3 items-center">
-              <div className="col-span-12 md:col-span-5 flex gap-2">
+              <div className="col-span-12 md:col-span-5">
                 <Input 
                   placeholder="Description"
                   value={line.description}
                   onChange={(e) => updateLine(index, 'description', e.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setSelectedLineIndex(index);
-                    setShowProductSearch(true);
-                  }}
-                  title="Choisir du catalogue"
-                >
-                  <Search className="w-4 h-4" />
-                </Button>
               </div>
               <div className="col-span-4 md:col-span-2">
                 <Input 
