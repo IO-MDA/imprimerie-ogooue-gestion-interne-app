@@ -52,6 +52,7 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
       setUsers(usersData);
 
       if (report?.id) {
+        // Rapport existant - charger les lignes
         const rowsData = await base44.entities.DailyReportRow.filter({ report_id: report.id });
         const sortedRows = rowsData.sort((a, b) => a.row_index - b.row_index);
         
@@ -94,26 +95,32 @@ export default function SpreadsheetEditor({ report, onClose, onSave }) {
           cash_caisse: report.cash_caisse || ''
         });
       } else {
-        // Nouveau rapport - utiliser l'utilisateur connecté comme opérateur par défaut
+        // Nouveau rapport - initialiser avec l'utilisateur connecté
         setFormData({
           date: moment().format('YYYY-MM-DD'),
           operateur_id: userData.id,
           operateur_nom: userData.full_name || userData.email,
           cash_caisse: ''
         });
-        initializeEmptyRows();
-      }
-      
-      // Pour les rapports existants sans opérateur, utiliser l'utilisateur connecté
-      if (report && !formData.operateur_id) {
-        setFormData(prev => ({
-          ...prev,
-          operateur_id: userData.id,
-          operateur_nom: userData.full_name || userData.email
+        
+        // Initialiser immédiatement les lignes vides
+        const emptyRows = Array.from({ length: INITIAL_ROWS_COUNT }, () => ({
+          copies: 0,
+          marchandises: 0,
+          scan: 0,
+          tirage_saisies: 0,
+          badges_plastification: 0,
+          demi_photos: 0,
+          maintenance: 0,
+          imprimerie: 0,
+          sorties: 0,
+          description: ''
         }));
+        setRows(emptyRows);
       }
     } catch (e) {
       toast.error('Erreur de chargement');
+      console.error(e);
     }
   };
 
