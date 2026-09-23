@@ -1,0 +1,9 @@
+{
+  "name": "Imprimerie OGOOUE - Syst\u00e8me de Gestion Interne Compl\u00e8te",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}
