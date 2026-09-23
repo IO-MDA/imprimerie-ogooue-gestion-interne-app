@@ -1,0 +1,44 @@
+{
+  "name": "Notifications RH Automatiques",
+  "description": "V\u00e9rifie et cr\u00e9e des notifications automatiques pour les \u00e9v\u00e9nements RH: \u00e9v\u00e9nements proches, demandes en attente, anomalies de pointage et rappels",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 7 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notifications_rh_automatiques",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notificationsRHAutomatiques",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "notificationsRHAutomatiques"
+  }
+}
